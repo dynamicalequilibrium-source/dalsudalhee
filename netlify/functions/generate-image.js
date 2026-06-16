@@ -60,7 +60,9 @@ exports.handler = async (event, context) => {
       }
     }
 
-    const systemInstructions = `첨부된 캐릭터를 그대로 유지한다. 얼굴 구조 변경 금지, 눈 모양 변경 금지, 신체 비율 변경 금지, 복장 변경 금지, 색상 변경 금지. 캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.`;
+    const systemInstructions = `첨부된 캐릭터를 그대로 유지한다. 얼굴 구조 변경 금지, 눈 모양 변경 금지, 신체 비율 변경 금지, 복장 변경 금지, 색상 변경 금지. 캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.
+배경은 아무것도 없는 투명 또는 흰색 단색 배경으로만 설정하고, 캐릭터 뒤에 도시, 자연, 사물 등의 어떠한 배경 환경이나 장면도 그리지 마십시오. (Absolutely no background. Render ONLY the character on a clean, solid white or transparent background. Do not draw any scenery, buildings, or environment behind the character.)
+이미지 내부에 어떠한 글자, 문자, 단어, 자막도 포함하지 마십시오. (Absolutely no text. Do not include any words, letters, subtitles, or labels inside the image.)`;
     const finalPrompt = `[System Instructions: ${systemInstructions}]\n\nUser Request: Generate the character performing the following scene: "${prompt}".`;
 
     if (usingGcpCreds) {
