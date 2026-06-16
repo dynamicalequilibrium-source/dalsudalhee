@@ -336,6 +336,8 @@ async function getReferenceImageBase64(charKey) {
   }
 }
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Trigger Pipeline Generation Process
 async function triggerGeneration() {
   const promptText = els.promptInput.value;
@@ -350,19 +352,20 @@ async function triggerGeneration() {
   
   resetPipelineNodes();
   
-  // Step 1: Input Prompt analysis (0ms - 400ms)
-  updatePipelineStep(1, 'active', '입력 프롬프트 분석 중...');
-  els.pipelineProgress.style.width = '0%';
-  
-  addDriftLog(`[Engine] Activating "Reference Character Mode" (공식 원본 참조 변형 방식).`, 'info');
-  addDriftLog(`[Engine] Binding reference sheets as input nodes: "기본-달수.png", "기본-달희.png"`, 'info');
-  
-  const systemInstructions = `첨부된 캐릭터를 그대로 유지한다. 얼굴 구조 변경 금지, 눈 모양 변경 금지, 신체 비율 변경 금지, 복장 변경 금지, 색상 변경 금지. 캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.
+  try {
+    // Step 1: Input Prompt analysis (0ms - 400ms)
+    updatePipelineStep(1, 'active', '입력 프롬프트 분석 중...');
+    els.pipelineProgress.style.width = '0%';
+    
+    addDriftLog(`[Engine] Activating "Reference Character Mode" (공식 원본 참조 변형 방식).`, 'info');
+    addDriftLog(`[Engine] Binding reference sheets as input nodes: "기본-달수.png", "기본-달희.png"`, 'info');
+    
+    const systemInstructions = `첨부된 캐릭터를 그대로 유지한다. 얼굴 구조 변경 금지, 눈 모양 변경 금지, 신체 비율 변경 금지, 복장 변경 금지, 색상 변경 금지. 캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.
 배경은 아무것도 없는 투명 또는 흰색 단색 배경으로만 설정하고, 캐릭터 뒤에 도시, 자연, 사물 등의 어떠한 배경 환경이나 장면도 그리지 마십시오. (Absolutely no background. Render ONLY the character on a clean, solid white or transparent background. Do not draw any scenery, buildings, or environment behind the character.)
 이미지 내부에 어떠한 글자, 문자, 단어, 자막도 포함하지 마십시오. (Absolutely no text. Do not include any words, letters, subtitles, or labels inside the image.)`;
-  addDriftLog(`[System Prompt] Injecting: "${systemInstructions}"`, 'info');
-  
-  setTimeout(async () => {
+    addDriftLog(`[System Prompt] Injecting: "${systemInstructions}"`, 'info');
+    
+    await sleep(400);
     updatePipelineStep(1, 'completed');
     
     // Step 2: Action Mapping (400ms - 900ms)
@@ -378,226 +381,218 @@ async function triggerGeneration() {
       addDriftLog(`[Mapping] Using manual selection: "${getActionDisplayName(appState.activeAction)}"`, 'info');
     }
     
-    setTimeout(async () => {
-      updatePipelineStep(2, 'completed');
+    await sleep(500);
+    updatePipelineStep(2, 'completed');
+    
+    // Step 3: Character Bible Locks verification (900ms - 1500ms)
+    updatePipelineStep(3, 'active', '캐릭터 가이드라인 고정 규격 적용 중...');
+    els.pipelineProgress.style.width = '50%';
+    
+    addDriftLog(`[Identity Lock] Enforcing zero-recreation policy. Lock parameters injected into request payload.`, 'success');
+    
+    await sleep(600);
+    updatePipelineStep(3, 'completed');
+    
+    // Step 4: Character Drift Prevention Check (1500ms - 2100ms)
+    updatePipelineStep(4, 'active', '캐릭터 붕괴 방지 검증 중...');
+    els.pipelineProgress.style.width = '75%';
+    
+    addDriftLog(`[Validation] Setting mode to reference-to-image. 0.00% Character Drift target enabled.`, 'success');
+    
+    await sleep(600);
+    updatePipelineStep(4, 'completed');
+    
+    // Step 5: Render Character (2100ms+)
+    updatePipelineStep(5, 'verified', '구글 Imagen 3 엔진 이미지 생성 중...');
+    els.pipelineProgress.style.width = '100%';
+    
+    // Fetch reference base64
+    const refBase64 = await getReferenceImageBase64(appState.activeCharacter);
+    
+    // Build full prompt including system instructions
+    const finalPrompt = `[System Instructions: ${systemInstructions}]\n\nUser Request: Generate the character performing the following scene: "${promptText}".`;
+    
+    if (appState.simulateMode) {
+      // SIMULATED DEMO MODE
+      // Match closest illustration to mock output
+      const matchedAsset = matchOfficialDbAsset(promptText);
+      appState.currentImgFile = 'example/' + matchedAsset.file;
       
-      // Step 3: Character Bible Locks verification (900ms - 1500ms)
-      updatePipelineStep(3, 'active', '캐릭터 가이드라인 고정 규격 적용 중...');
-      els.pipelineProgress.style.width = '50%';
-      
-      addDriftLog(`[Identity Lock] Enforcing zero-recreation policy. Lock parameters injected into request payload.`, 'success');
-      
-      setTimeout(async () => {
-        updatePipelineStep(3, 'completed');
-        
-        // Step 4: Character Drift Prevention Check (1500ms - 2100ms)
-        updatePipelineStep(4, 'active', '캐릭터 붕괴 방지 검증 중...');
-        els.pipelineProgress.style.width = '75%';
-        
-        addDriftLog(`[Validation] Setting mode to reference-to-image. 0.00% Character Drift target enabled.`, 'success');
-        
-        setTimeout(async () => {
-          updatePipelineStep(4, 'completed');
-          
-          // Step 5: Render Character (2100ms+)
-          updatePipelineStep(5, 'verified', '구글 Imagen 3 엔진 이미지 생성 중...');
-          els.pipelineProgress.style.width = '100%';
-          
-          // Fetch reference base64
-          const refBase64 = await getReferenceImageBase64(appState.activeCharacter);
-          
-          // Build full prompt including system instructions
-          const finalPrompt = `[System Instructions: ${systemInstructions}]\n\nUser Request: Generate the character performing the following scene: "${promptText}".`;
-          
-          if (appState.simulateMode) {
-            // SIMULATED DEMO MODE
-            // Match closest illustration to mock output
-            const matchedAsset = matchOfficialDbAsset(promptText);
-            appState.currentImgFile = 'example/' + matchedAsset.file;
-            
-            // Log the exact simulated API request and response JSON payloads for inspector verification!
-            const simulatedRequestPayload = {
-              instances: [
-                {
-                  prompt: finalPrompt,
-                  image: {
-                    bytesBase64Encoded: refBase64.substring(0, 40) + "...[BASE64_BYTES]..."
-                  }
-                }
-              ],
-              parameters: {
-                sampleCount: 1,
-                aspectRatio: "1:1",
-                imageFormat: "png",
-                outputMimeType: "image/png"
-              }
-            };
-            
-            const simulatedResponsePayload = {
-              predictions: [
-                {
-                  bytesBase64Encoded: "...[GENERATED_PNG_BASE64_BYTES]...",
-                  mimeType: "image/png"
-                }
-              ]
-            };
-            
-            addDriftLog(`[API Request] POST https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`, 'info');
-            addDriftLog(`[Payload Sent] ${JSON.stringify(simulatedRequestPayload)}`, 'info');
-            addDriftLog(`[API Response Received] ${JSON.stringify(simulatedResponsePayload)}`, 'success');
-            
-            setTimeout(() => {
-              renderGeneratedOutput(`<img src="${appState.currentImgFile}" alt="Official Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35)); animation: float-char 6s ease-in-out infinite;" />`, matchedAsset.file.replace('.png', ''));
-            }, 400);
-            
-          } else {
-            // LIVE GOOGLE IMAGEN 3 CALL
-            const apiType = els.apiTypeSelect.value;
-            const studioKey = els.apiStudioKey.value.trim();
-            const projectId = els.apiProjectId.value.trim() || '914250995391';
-            const token = els.apiAccessToken.value.trim();
-
-            let useProxy = window.location.protocol !== 'file:';
-            let resData = null;
-
-            if (useProxy) {
-              addDriftLog(`[API Request] Dispatching predict call through local Proxy Server...`, 'info');
-              try {
-                const res = await fetch('/api/generate-image', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    prompt: promptText,
-                    refBase64: refBase64,
-                    apiType: apiType,
-                    projectId: projectId,
-                    token: token
-                  })
-                });
-                
-                if (res.ok) {
-                  resData = await res.json();
-                } else {
-                  const errText = await res.text();
-                  addDriftLog(`[Proxy Warning] Proxy server returned status ${res.status}: ${errText}. Falling back to direct browser call.`, 'warning');
-                  useProxy = false;
-                }
-              } catch (e) {
-                addDriftLog(`[Proxy Connection Fail] Local proxy server is not reachable. Falling back to direct browser call.`, 'warning');
-                useProxy = false;
-              }
-            }
-
-            if (!useProxy) {
-              // Direct browser-to-Google API fallback
-              let url = '';
-              let headers = { 'Content-Type': 'application/json' };
-              let requestBody = {};
-
-              if (apiType === 'studio') {
-                if (!studioKey) {
-                  alert('Google AI Studio API Key를 입력해 주세요. (또는 시뮬레이션 모드를 활성화하세요)');
-                  resetBtnAndCanvas();
-                  return;
-                }
-                addDriftLog(`[API Request] Dispatching direct call to Google AI Studio (gemini-2.5-flash-image)...`, 'info');
-                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${studioKey}`;
-                requestBody = {
-                  contents: [
-                    {
-                      parts: [
-                        {
-                          inlineData: {
-                            mimeType: "image/png",
-                            data: refBase64
-                          }
-                        },
-                        {
-                          text: finalPrompt
-                        }
-                      ]
-                    }
-                  ],
-                  generationConfig: {
-                    responseModalities: ["IMAGE"]
-                  }
-                };
-              } else {
-                if (!projectId || !token) {
-                  alert('구글 클라우드 Project ID와 OAuth Access Token을 입력해 주세요. (또는 시뮬레이션 모드를 활성화하세요)');
-                  resetBtnAndCanvas();
-                  return;
-                }
-                addDriftLog(`[API Request] Dispatching direct call to Google Cloud Vertex AI (imagen-3.0-capability)...`, 'info');
-                url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`;
-                headers['Authorization'] = `Bearer ${token}`;
-                requestBody = {
-                  instances: [
-                    {
-                      prompt: finalPrompt,
-                      image: { bytesBase64Encoded: refBase64 }
-                    }
-                  ],
-                  parameters: {
-                    sampleCount: 1,
-                    aspectRatio: "1:1",
-                    imageFormat: "png",
-                    outputMimeType: "image/png"
-                  }
-                };
-              }
-
-              try {
-                const res = await fetch(url, {
-                  method: 'POST',
-                  headers: headers,
-                  body: JSON.stringify(requestBody)
-                });
-
-                if (!res.ok) {
-                  const errText = await res.text();
-                  throw new Error(`HTTP ${res.status}: ${errText}`);
-                }
-                resData = await res.json();
-              } catch (err) {
-                const engineName = apiType === 'studio' ? 'AI Studio' : 'Vertex AI';
-                addDriftLog(`[API Error] ${err.message}`, 'danger');
-                alert(`${engineName} Imagen 생성에 실패했습니다: ${err.message}\n\n시뮬레이션 모드로 다시 실행하는 것을 추천합니다.`);
-                resetBtnAndCanvas();
-                return;
-              }
-            }
-
-            // Process image result
-            let outputB64 = '';
-            if (resData) {
-              if (resData.predictions && resData.predictions.length > 0) {
-                outputB64 = resData.predictions[0].bytesBase64Encoded;
-              } else if (resData.candidates && resData.candidates[0].content && resData.candidates[0].content.parts) {
-                const imgPart = resData.candidates[0].content.parts.find(p => p.inlineData && p.inlineData.mimeType.startsWith('image/'));
-                if (imgPart) {
-                  outputB64 = imgPart.inlineData.data;
-                }
-              }
-            }
-
-            if (outputB64) {
-              appState.currentImgFile = 'data:image/png;base64,' + outputB64;
-              const sourceName = useProxy ? 'Proxy Server' : (apiType === 'studio' ? 'AI Studio (Direct)' : 'Vertex AI (Direct)');
-              addDriftLog(`[API Response] Image successfully synthesized and received via ${sourceName}.`, 'success');
-              renderGeneratedOutput(`<img src="${appState.currentImgFile}" alt="Generated Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35));" />`, `IMAGEN_OUTPUT`);
-            } else {
-              addDriftLog(`[API Error] Response payload is missing image data.`, 'danger');
-              console.error('Raw response data:', resData);
-              alert('응답에 이미지 데이터가 포함되어 있지 않습니다.');
-              resetBtnAndCanvas();
+      // Log the exact simulated API request and response JSON payloads for inspector verification!
+      const simulatedRequestPayload = {
+        instances: [
+          {
+            prompt: finalPrompt,
+            image: {
+              bytesBase64Encoded: refBase64.substring(0, 40) + "...[BASE64_BYTES]..."
             }
           }
+        ],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: "1:1",
+          imageFormat: "png",
+          outputMimeType: "image/png"
+        }
+      };
+      
+      const simulatedResponsePayload = {
+        predictions: [
+          {
+            bytesBase64Encoded: "...[GENERATED_PNG_BASE64_BYTES]...",
+            mimeType: "image/png"
+          }
+        ]
+      };
+      
+      addDriftLog(`[API Request] POST https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`, 'info');
+      addDriftLog(`[Payload Sent] ${JSON.stringify(simulatedRequestPayload)}`, 'info');
+      addDriftLog(`[API Response Received] ${JSON.stringify(simulatedResponsePayload)}`, 'success');
+      
+      await sleep(400);
+      renderGeneratedOutput(`<img src="${appState.currentImgFile}" alt="Official Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35)); animation: float-char 6s ease-in-out infinite;" />`, matchedAsset.file.replace('.png', ''));
+      
+    } else {
+      // LIVE GOOGLE IMAGEN 3 CALL
+      const apiType = els.apiTypeSelect.value;
+      const studioKey = els.apiStudioKey.value.trim();
+      const projectId = els.apiProjectId.value.trim() || '914250995391';
+      const token = els.apiAccessToken.value.trim();
+
+      let useProxy = window.location.protocol !== 'file:';
+      let resData = null;
+
+      if (useProxy) {
+        addDriftLog(`[API Request] Dispatching predict call through local Proxy Server...`, 'info');
+        try {
+          const res = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: promptText,
+              refBase64: refBase64,
+              apiType: apiType,
+              projectId: projectId,
+              token: token
+            })
+          });
           
-        }, 600);
-      }, 600);
-    }, 500);
-  }, 400);
+          if (res.ok) {
+            resData = await res.json();
+          } else {
+            const errText = await res.text();
+            addDriftLog(`[Proxy Warning] Proxy server returned status ${res.status}: ${errText}. Falling back to direct browser call.`, 'warning');
+            useProxy = false;
+          }
+        } catch (e) {
+          addDriftLog(`[Proxy Connection Fail] Local proxy server is not reachable. Falling back to direct browser call.`, 'warning');
+          useProxy = false;
+        }
+      }
+
+      if (!useProxy) {
+        // Direct browser-to-Google API fallback
+        let url = '';
+        let headers = { 'Content-Type': 'application/json' };
+        let requestBody = {};
+
+        if (apiType === 'studio') {
+          if (!studioKey) {
+            alert('Google AI Studio API Key를 입력해 주세요. (또는 시뮬레이션 모드를 활성화하세요)');
+            resetBtnAndCanvas();
+            return;
+          }
+          addDriftLog(`[API Request] Dispatching direct call to Google AI Studio (gemini-2.5-flash-image)...`, 'info');
+          url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${studioKey}`;
+          requestBody = {
+            contents: [
+              {
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: "image/png",
+                      data: refBase64
+                    }
+                  },
+                  {
+                    text: finalPrompt
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              responseModalities: ["IMAGE"]
+            }
+          };
+        } else {
+          if (!projectId || !token) {
+            alert('구글 클라우드 Project ID와 OAuth Access Token을 입력해 주세요. (또는 시뮬레이션 모드를 활성화하세요)');
+            resetBtnAndCanvas();
+            return;
+          }
+          addDriftLog(`[API Request] Dispatching direct call to Google Cloud Vertex AI (imagen-3.0-capability)...`, 'info');
+          url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`;
+          headers['Authorization'] = `Bearer ${token}`;
+          requestBody = {
+            instances: [
+              {
+                prompt: finalPrompt,
+                image: { bytesBase64Encoded: refBase64 }
+              }
+            ],
+            parameters: {
+              sampleCount: 1,
+              aspectRatio: "1:1",
+              imageFormat: "png",
+              outputMimeType: "image/png"
+            }
+          };
+        }
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        resData = await res.json();
+      }
+
+      // Process image result
+      let outputB64 = '';
+      if (resData) {
+        if (resData.predictions && resData.predictions.length > 0) {
+          outputB64 = resData.predictions[0].bytesBase64Encoded;
+        } else if (resData.candidates && resData.candidates[0].content && resData.candidates[0].content.parts) {
+          const imgPart = resData.candidates[0].content.parts.find(p => p.inlineData && p.inlineData.mimeType.startsWith('image/'));
+          if (imgPart) {
+            outputB64 = imgPart.inlineData.data;
+          }
+        }
+      }
+
+      if (outputB64) {
+        appState.currentImgFile = 'data:image/png;base64,' + outputB64;
+        const sourceName = useProxy ? 'Proxy Server' : (apiType === 'studio' ? 'AI Studio (Direct)' : 'Vertex AI (Direct)');
+        addDriftLog(`[API Response] Image successfully synthesized and received via ${sourceName}.`, 'success');
+        renderGeneratedOutput(`<img src="${appState.currentImgFile}" alt="Generated Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35));" />`, `IMAGEN_OUTPUT`);
+      } else {
+        addDriftLog(`[API Error] Response payload is missing image data.`, 'danger');
+        console.error('Raw response data:', resData);
+        alert('응답에 이미지 데이터가 포함되어 있지 않습니다.');
+        resetBtnAndCanvas();
+      }
+    }
+  } catch (err) {
+    addDriftLog(`[API Exception] ${err.message}`, 'danger');
+    console.error('API call crashed:', err);
+    alert('이미지 생성 중 오류가 발생했습니다: ' + err.message);
+    resetBtnAndCanvas();
+  }
 }
 
 // Render generated results helper
@@ -794,35 +789,130 @@ function exportPNG() {
   addDriftLog(`[Export] Downloaded generated high-res PNG file.`, 'success');
 }
 
-// History Storage Management
-function loadHistory() {
-  const stored = localStorage.getItem('dalseo_studio_history');
-  if (stored) {
-    try {
-      appState.history = JSON.parse(stored);
-    } catch (e) {
-      appState.history = [];
-    }
-  }
-  renderHistoryList();
+// History Storage Management (IndexedDB)
+const dbName = 'DalseoStudioDB';
+const storeName = 'history';
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    // Open DB version 2 to make sure version upgrade runs for anyone who tested version 1
+    const request = indexedDB.open(dbName, 2);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
 }
 
-function saveToHistory(item) {
-  appState.history.unshift(item);
-  if (appState.history.length > 12) {
-    appState.history.pop();
+async function getHistoryFromDB() {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readonly');
+      const store = transaction.objectStore(storeName);
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const items = request.result || [];
+        items.sort((a, b) => b.id - a.id);
+        resolve(items);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('Failed to read from IndexedDB, falling back to empty', err);
+    return [];
   }
-  localStorage.setItem('dalseo_studio_history', JSON.stringify(appState.history));
-  renderHistoryList();
+}
+
+async function addHistoryItemDB(item) {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.put(item);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('Failed to add item to IndexedDB', err);
+    throw err;
+  }
+}
+
+async function deleteHistoryItemDB(id) {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('Failed to delete item from IndexedDB', err);
+    throw err;
+  }
+}
+
+async function clearHistoryDB() {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('Failed to clear IndexedDB store', err);
+    throw err;
+  }
+}
+
+async function loadHistory() {
+  try {
+    appState.history = await getHistoryFromDB();
+  } catch (err) {
+    console.error('Failed to load history', err);
+    appState.history = [];
+  } finally {
+    renderHistoryList();
+  }
+}
+
+async function saveToHistory(item) {
+  try {
+    appState.history.unshift(item);
+    if (appState.history.length > 12) {
+      const popped = appState.history.pop();
+      try {
+        await deleteHistoryItemDB(popped.id);
+      } catch (err) {
+        console.error('Failed to prune old history item:', err);
+      }
+    }
+    await addHistoryItemDB(item);
+  } catch (err) {
+    console.error('Failed to save item to DB, keeping in-memory:', err);
+  } finally {
+    renderHistoryList();
+  }
 }
 
 function renderHistoryList() {
-  if (appState.history.length === 0) {
+  if (!appState.history || appState.history.length === 0) {
     els.historyList.innerHTML = `
       <div class="empty-history">
         <div class="empty-history-icon">📦</div>
-        <p>이력이 비어 있습니다.</p>
-        <p style="font-size: 0.7rem; margin-top: 0.25rem;">생성된 파일은 브라우저 세션에 안전하게 유지됩니다.</p>
+        <p>생성 이력이 없습니다.</p>
+        <p style="font-size: 0.7rem; margin-top: 0.25rem;">생성된 이미지는 안전하게 보관됩니다.</p>
       </div>
     `;
     return;
@@ -876,25 +966,35 @@ function loadHistoryItem(id) {
   
   const charName = getCharacterDisplayName(item.character);
   const actionName = getActionDisplayName(item.action);
-  els.activeCanvasMeta.textContent = `${charName} | ${actionName} | Reloaded`;
+  els.activeCanvasMeta.textContent = `${charName} | ${actionName} | 불러옴`;
   
-  addDriftLog(`[History] Loaded asset "${item.name}" from LocalStorage.`, 'success');
+  addDriftLog(`[History] Loaded asset "${item.name}" from IndexedDB.`, 'success');
 }
 
-function deleteHistoryItem(event, id) {
+async function deleteHistoryItem(event, id) {
   event.stopPropagation();
-  appState.history = appState.history.filter(h => h.id !== id);
-  localStorage.setItem('dalseo_studio_history', JSON.stringify(appState.history));
-  renderHistoryList();
-  renderEmptyCanvas();
-}
-
-function clearHistory() {
-  if (confirm('모든 생성 이력을 삭제하시겠습니까?')) {
-    appState.history = [];
-    localStorage.removeItem('dalseo_studio_history');
+  try {
+    appState.history = appState.history.filter(h => h.id !== id);
+    await deleteHistoryItemDB(id);
+  } catch (err) {
+    console.error('Failed to delete history item:', err);
+  } finally {
     renderHistoryList();
     renderEmptyCanvas();
+  }
+}
+
+async function clearHistory() {
+  if (confirm('모든 생성 이력을 삭제하시겠습니까?')) {
+    try {
+      appState.history = [];
+      await clearHistoryDB();
+    } catch (err) {
+      console.error('Failed to clear history:', err);
+    } finally {
+      renderHistoryList();
+      renderEmptyCanvas();
+    }
   }
 }
 
