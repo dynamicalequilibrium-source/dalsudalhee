@@ -490,6 +490,7 @@ async function triggerGeneration() {
               // Direct browser-to-Google API fallback
               let url = '';
               let headers = { 'Content-Type': 'application/json' };
+              let requestBody = {};
 
               if (apiType === 'studio') {
                 if (!studioKey) {
@@ -497,33 +498,52 @@ async function triggerGeneration() {
                   resetBtnAndCanvas();
                   return;
                 }
-                addDriftLog(`[API Request] Dispatching direct call to Google AI Studio...`, 'info');
-                url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-capability-001:predict?key=${studioKey}`;
+                addDriftLog(`[API Request] Dispatching direct call to Google AI Studio (gemini-2.5-flash-image)...`, 'info');
+                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${studioKey}`;
+                requestBody = {
+                  contents: [
+                    {
+                      parts: [
+                        {
+                          inlineData: {
+                            mimeType: "image/png",
+                            data: refBase64
+                          }
+                        },
+                        {
+                          text: finalPrompt
+                        }
+                      ]
+                    }
+                  ],
+                  generationConfig: {
+                    responseModalities: ["IMAGE"]
+                  }
+                };
               } else {
                 if (!projectId || !token) {
                   alert('구글 클라우드 Project ID와 OAuth Access Token을 입력해 주세요. (또는 시뮬레이션 모드를 활성화하세요)');
                   resetBtnAndCanvas();
                   return;
                 }
-                addDriftLog(`[API Request] Dispatching direct call to Google Cloud Vertex AI...`, 'info');
+                addDriftLog(`[API Request] Dispatching direct call to Google Cloud Vertex AI (imagen-3.0-capability)...`, 'info');
                 url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`;
                 headers['Authorization'] = `Bearer ${token}`;
-              }
-
-              const requestBody = {
-                instances: [
-                  {
-                    prompt: finalPrompt,
-                    image: { bytesBase64Encoded: refBase64 }
+                requestBody = {
+                  instances: [
+                    {
+                      prompt: finalPrompt,
+                      image: { bytesBase64Encoded: refBase64 }
+                    }
+                  ],
+                  parameters: {
+                    sampleCount: 1,
+                    aspectRatio: "1:1",
+                    imageFormat: "png",
+                    outputMimeType: "image/png"
                   }
-                ],
-                parameters: {
-                  sampleCount: 1,
-                  aspectRatio: "1:1",
-                  imageFormat: "png",
-                  outputMimeType: "image/png"
-                }
-              };
+                };
+              }
 
               try {
                 const res = await fetch(url, {
@@ -547,16 +567,26 @@ async function triggerGeneration() {
             }
 
             // Process image result
-            if (resData && resData.predictions && resData.predictions.length > 0) {
-              const outputB64 = resData.predictions[0].bytesBase64Encoded;
+            let outputB64 = '';
+            if (resData) {
+              if (resData.predictions && resData.predictions.length > 0) {
+                outputB64 = resData.predictions[0].bytesBase64Encoded;
+              } else if (resData.candidates && resData.candidates[0].content && resData.candidates[0].content.parts) {
+                const imgPart = resData.candidates[0].content.parts.find(p => p.inlineData && p.inlineData.mimeType.startsWith('image/'));
+                if (imgPart) {
+                  outputB64 = imgPart.inlineData.data;
+                }
+              }
+            }
+
+            if (outputB64) {
               appState.currentImgFile = 'data:image/png;base64,' + outputB64;
-              
               const sourceName = useProxy ? 'Proxy Server' : (apiType === 'studio' ? 'AI Studio (Direct)' : 'Vertex AI (Direct)');
               addDriftLog(`[API Response] Image successfully synthesized and received via ${sourceName}.`, 'success');
-              
               renderGeneratedOutput(`<img src="${appState.currentImgFile}" alt="Generated Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35));" />`, `IMAGEN_OUTPUT`);
             } else {
-              addDriftLog(`[API Error] Response payload is missing predictions data.`, 'danger');
+              addDriftLog(`[API Error] Response payload is missing image data.`, 'danger');
+              console.error('Raw response data:', resData);
               alert('응답에 이미지 데이터가 포함되어 있지 않습니다.');
               resetBtnAndCanvas();
             }

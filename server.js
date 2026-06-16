@@ -51,6 +51,8 @@ app.post('/api/generate-image', async (req, res) => {
       'Content-Type': 'application/json'
     };
     let usingGcpCreds = false;
+    let requestBody = {};
+    let isGeminiCall = false;
 
     // 1. Check if Server-Side Service Account is configured (Method 2 Permanent Connection)
     if (process.env.GOOGLE_CREDS_JSON) {
@@ -65,46 +67,82 @@ app.post('/api/generate-image', async (req, res) => {
       }
     }
 
-    if (!usingGcpCreds) {
-      // 2. Client-provided temporary OAuth token for Vertex AI
+    const systemInstructions = `첨부된 캐릭터를 그대로 유지한다. 얼굴 구조 변경 금지, 눈 모양 변경 금지, 신체 비율 변경 금지, 복장 변경 금지, 색상 변경 금지. 캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.`;
+    const finalPrompt = `[System Instructions: ${systemInstructions}]\n\nUser Request: Generate the character performing the following scene: "${prompt}".`;
+
+    if (usingGcpCreds) {
+      // Vertex AI request body structure
+      requestBody = {
+        instances: [
+          {
+            prompt: finalPrompt,
+            image: {
+              bytesBase64Encoded: refBase64
+            }
+          }
+        ],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: "1:1",
+          imageFormat: "png",
+          outputMimeType: "image/png"
+        }
+      };
+    } else {
       if (apiType === 'vertex') {
+        // Client-provided OAuth token for Vertex AI
         const targetProjectId = projectId || process.env.PROJECT_ID || '914250995391';
         if (!token) {
           return res.status(400).json({ error: 'Google Cloud OAuth Access Token is required when not using server-side credentials.' });
         }
         url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${targetProjectId}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`;
         headers['Authorization'] = `Bearer ${token}`;
+        requestBody = {
+          instances: [
+            {
+              prompt: finalPrompt,
+              image: { bytesBase64Encoded: refBase64 }
+            }
+          ],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: "1:1",
+            imageFormat: "png",
+            outputMimeType: "image/png"
+          }
+        };
       } else {
-        // 3. Fallback to Google AI Studio with API Key
+        // Google AI Studio with API Key -> Calls gemini-2.5-flash-image
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
           return res.status(500).json({ error: 'Server configuration error: Neither GOOGLE_CREDS_JSON nor GEMINI_API_KEY is configured on the server.' });
         }
-        url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-capability-001:predict?key=${apiKey}`;
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
+        isGeminiCall = true;
+        requestBody = {
+          contents: [
+            {
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: "image/png",
+                    data: refBase64
+                  }
+                },
+                {
+                  text: finalPrompt
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseModalities: ["IMAGE"]
+          }
+        };
       }
     }
 
-    const systemInstructions = `첨부된 캐릭터를 그대로 유지한다. 얼굴 구조 변경 금지, 눈 모양 변경 금지, 신체 비율 변경 금지, 복장 변경 금지, 색상 변경 금지. 캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.`;
-    const finalPrompt = `[System Instructions: ${systemInstructions}]\n\nUser Request: Generate the character performing the following scene: "${prompt}".`;
-
-    const requestBody = {
-      instances: [
-        {
-          prompt: finalPrompt,
-          image: {
-            bytesBase64Encoded: refBase64
-          }
-        }
-      ],
-      parameters: {
-        sampleCount: 1,
-        aspectRatio: "1:1",
-        imageFormat: "png",
-        outputMimeType: "image/png"
-      }
-    };
-
-    console.log(`[Proxy] Forwarding request to Google model (using ${usingGcpCreds ? 'Vertex AI Server Credentials' : apiType})...`);
+    console.log(`[Proxy] Forwarding request to Google model (using ${usingGcpCreds ? 'Vertex AI Server Credentials' : (isGeminiCall ? 'Gemini API' : 'Vertex AI Direct')})...`);
     const response = await fetch(url, {
       method: 'POST',
       headers: headers,
