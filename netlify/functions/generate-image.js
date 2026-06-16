@@ -19,7 +19,7 @@ exports.handler = async (event, context) => {
 
     if (apiType === 'vertex' && projectId && token) {
       // Vertex AI path (OAuth Token-based)
-      url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-4.0-generate-001:predict`;
+      url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`;
       headers['Authorization'] = `Bearer ${token}`;
     } else {
       // Google AI Studio path (uses secure Netlify environment variable)
@@ -30,7 +30,7 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({ error: 'Server configuration error: GEMINI_API_KEY environment variable is not set in Netlify dashboard.' })
         };
       }
-      url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+      url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-capability-001:predict?key=${apiKey}`;
     }
 
     const systemInstructions = `첨부된 캐릭터를 그대로 유지한다. 얼굴 구조 변경 금지, 눈 모양 변경 금지, 신체 비율 변경 금지, 복장 변경 금지, 색상 변경 금지. 캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.`;

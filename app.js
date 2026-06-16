@@ -440,7 +440,7 @@ async function triggerGeneration() {
               ]
             };
             
-            addDriftLog(`[API Request] POST https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/imagen-4.0-generate-001:predict`, 'info');
+            addDriftLog(`[API Request] POST https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`, 'info');
             addDriftLog(`[Payload Sent] ${JSON.stringify(simulatedRequestPayload)}`, 'info');
             addDriftLog(`[API Response Received] ${JSON.stringify(simulatedResponsePayload)}`, 'success');
             
@@ -498,7 +498,7 @@ async function triggerGeneration() {
                   return;
                 }
                 addDriftLog(`[API Request] Dispatching direct call to Google AI Studio...`, 'info');
-                url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${studioKey}`;
+                url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-capability-001:predict?key=${studioKey}`;
               } else {
                 if (!projectId || !token) {
                   alert('구글 클라우드 Project ID와 OAuth Access Token을 입력해 주세요. (또는 시뮬레이션 모드를 활성화하세요)');
@@ -506,7 +506,7 @@ async function triggerGeneration() {
                   return;
                 }
                 addDriftLog(`[API Request] Dispatching direct call to Google Cloud Vertex AI...`, 'info');
-                url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-4.0-generate-001:predict`;
+                url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`;
                 headers['Authorization'] = `Bearer ${token}`;
               }
 
