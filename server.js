@@ -41,17 +41,16 @@ app.post('/api/generate-image', async (req, res) => {
     const requestBody = {
       instances: [
         {
-          prompt: finalPrompt
+          prompt: finalPrompt,
+          image: {
+            bytesBase64Encoded: refBase64
+          }
         }
       ],
       parameters: {
-        mode: "image-to-image",
-        image: {
-          bytesBase64Encoded: refBase64
-        },
-        imageFormat: "png",
         sampleCount: 1,
         aspectRatio: "1:1",
+        imageFormat: "png",
         outputMimeType: "image/png"
       }
     };

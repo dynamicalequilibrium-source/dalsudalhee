@@ -417,17 +417,16 @@ async function triggerGeneration() {
             const simulatedRequestPayload = {
               instances: [
                 {
-                  prompt: finalPrompt
+                  prompt: finalPrompt,
+                  image: {
+                    bytesBase64Encoded: refBase64.substring(0, 40) + "...[BASE64_BYTES]..."
+                  }
                 }
               ],
               parameters: {
-                mode: "image-to-image",
-                image: {
-                  bytesBase64Encoded: refBase64.substring(0, 40) + "...[BASE64_BYTES]..."
-                },
-                imageFormat: "png",
                 sampleCount: 1,
                 aspectRatio: "1:1",
+                imageFormat: "png",
                 outputMimeType: "image/png"
               }
             };
@@ -512,13 +511,16 @@ async function triggerGeneration() {
               }
 
               const requestBody = {
-                instances: [{ prompt: finalPrompt }],
+                instances: [
+                  {
+                    prompt: finalPrompt,
+                    image: { bytesBase64Encoded: refBase64 }
+                  }
+                ],
                 parameters: {
-                  mode: "image-to-image",
-                  image: { bytesBase64Encoded: refBase64 },
-                  imageFormat: "png",
                   sampleCount: 1,
                   aspectRatio: "1:1",
+                  imageFormat: "png",
                   outputMimeType: "image/png"
                 }
               };
