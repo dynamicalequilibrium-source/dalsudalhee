@@ -109,13 +109,7 @@ exports.handler = async (event, context) => {
         };
       } else {
         // Google AI Studio with API Key -> Calls gemini-2.5-flash-image
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-          return {
-            statusCode: 500,
-            body: JSON.stringify({ error: 'Server configuration error: Neither GOOGLE_CREDS_JSON nor GEMINI_API_KEY is configured in Netlify.' })
-          };
-        }
+        const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDbXvGVIoHumx5v_yf74KDEG6D-cU0IEjA';
         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
         isGeminiCall = true;
         requestBody = {

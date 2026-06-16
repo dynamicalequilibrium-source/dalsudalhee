@@ -113,10 +113,7 @@ app.post('/api/generate-image', async (req, res) => {
         };
       } else {
         // Google AI Studio with API Key -> Calls gemini-2.5-flash-image
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-          return res.status(500).json({ error: 'Server configuration error: Neither GOOGLE_CREDS_JSON nor GEMINI_API_KEY is configured on the server.' });
-        }
+        const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDbXvGVIoHumx5v_yf74KDEG6D-cU0IEjA';
         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
         isGeminiCall = true;
         requestBody = {
