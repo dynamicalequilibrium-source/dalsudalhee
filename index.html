@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dalseo Character Studio - AI Character Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Studio Header -->
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon">D</div>
+      <div class="logo-text">DALSEO CHARACTER STUDIO</div>
+      <span class="logo-badge">v1.0.0</span>
+    </div>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <button class="btn-secondary" onclick="openAdminModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+        </svg>
+        Admin Console
+      </button>
+      <div class="connection-status">
+        <span class="status-indicator"></span>
+        <span>Identity Engine Connected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Workspace -->
+  <div class="app-container">
+    
+    <!-- Column 1: Configuration Panel -->
+    <aside class="config-panel scrollable">
+      <h3 class="panel-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Generator Settings
+      </h3>
+      
+      <!-- AI Engine Connection Panel -->
+      <div class="form-group" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+        <label class="form-label" style="color: var(--color-primary); font-weight: 700; display: flex; justify-content: space-between; align-items: center; text-transform: none;">
+          Google Imagen API 연동
+          <span style="font-size: 0.65rem; font-weight: normal; color: var(--text-muted); text-transform: none;">Engine Connect</span>
+        </label>
+        
+        <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;">
+          <!-- Simulation toggle -->
+          <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; cursor: pointer; color: #F59E0B; font-weight: 600;">
+            <input type="checkbox" id="apiSimulateCheck" checked onchange="toggleApiSimulation()">
+            시뮬레이션 모드 (Simulated Mode)
+          </label>
+          
+          <div id="apiRealConfigFields" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+            <!-- Connection Type Dropdown -->
+            <div>
+              <label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">연동 방식 선택</label>
+              <select id="apiTypeSelect" class="studio-select" style="padding: 0.35rem; font-size: 0.8rem;" onchange="toggleApiType()">
+                <option value="studio">Google AI Studio (API 키 - 영구 사용 가능)</option>
+                <option value="vertex">Google Cloud Vertex AI (OAuth 토큰 - 1시간 만료)</option>
+              </select>
+            </div>
+            
+            <!-- AI Studio config fields -->
+            <div id="apiStudioFields" style="display: flex; flex-direction: column; gap: 0.4rem;">
+              <input type="password" id="apiStudioKey" class="mapping-val-input" placeholder="Google AI Studio API Key" style="padding: 0.4rem; font-size: 0.8rem; background-color: var(--bg-base); border: 1px solid var(--border-color); color: #FFF; border-radius: 0.25rem;" oninput="saveApiCredentials()">
+              <span style="font-size: 0.65rem; color: var(--text-muted);">
+                Google AI Studio에서 발급받은 영구 API 키를 입력하세요.
+              </span>
+            </div>
+            
+            <!-- Vertex AI config fields -->
+            <div id="apiVertexFields" style="display: none; flex-direction: column; gap: 0.4rem;">
+              <input type="text" id="apiProjectId" class="mapping-val-input" placeholder="Google Cloud Project ID" style="padding: 0.4rem; font-size: 0.8rem; background-color: var(--bg-base); border: 1px solid var(--border-color); color: #FFF; border-radius: 0.25rem;" oninput="saveApiCredentials()">
+              <input type="password" id="apiAccessToken" class="mapping-val-input" placeholder="OAuth Access Token" style="padding: 0.4rem; font-size: 0.8rem; background-color: var(--bg-base); border: 1px solid var(--border-color); color: #FFF; border-radius: 0.25rem;" oninput="saveApiCredentials()">
+              <span style="font-size: 0.65rem; color: var(--text-muted);">
+                `gcloud auth print-access-token`으로 발급받은 토큰
+              </span>
+            </div>
+
+            <!-- Remember check -->
+            <label style="font-size: 0.7rem; display: flex; align-items: center; gap: 0.25rem; cursor: pointer; color: var(--text-muted); margin-top: 0.25rem;">
+              <input type="checkbox" id="apiRememberCheck" checked onchange="saveApiCredentials()">
+              입력 정보 브라우저에 저장 (Remember Key)
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Character selector -->
+      <div class="form-group">
+        <label class="form-label">Character Select <span class="req">*</span></label>
+        <div class="character-select-grid">
+          <button class="char-btn active" data-char="dalsu">
+            <div class="char-avatar-mock">수</div>
+            <span>달수 (Dalsu)</span>
+          </button>
+          <button class="char-btn" data-char="dalhee">
+            <div class="char-avatar-mock" style="background-color: #EC4899; color: white;">희</div>
+            <span>달희 (Dalhee)</span>
+          </button>
+          <button class="char-btn" data-char="both">
+            <div class="char-avatar-mock" style="background-color: #6366F1; color: white;">Dual</div>
+            <span>달수 & 달희</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- AI Reference Character Attachments -->
+      <div class="form-group">
+        <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+          Reference Poses (참조 캐릭터)
+          <span style="color: var(--color-accent); font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 0.2rem;">
+            <span class="status-indicator" style="width: 6px; height: 6px; background-color: var(--color-accent); box-shadow: 0 0 6px var(--color-accent); animation: pulse-glow 2s infinite;"></span>
+            Always Attached
+          </span>
+        </label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 0.6rem; border-radius: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-surface); padding: 0.4rem; border-radius: 0.375rem; border: 1px solid rgba(255,255,255,0.04);">
+            <div style="width: 32px; height: 32px; background: #000; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+              <img src="example/기본-달수.png" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%236366f1%22/><text x=%2250%22 y=%2255%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2220%22>Dalsu</text></svg>'">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 0.75rem; font-weight: 700; color: #FFF;">달수 원본</span>
+              <span style="font-size: 0.6rem; color: var(--text-muted);">Reference sheet</span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-surface); padding: 0.4rem; border-radius: 0.375rem; border: 1px solid rgba(255,255,255,0.04);">
+            <div style="width: 32px; height: 32px; background: #000; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+              <img src="example/기본-달희.png" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%23ec4899%22/><text x=%2250%22 y=%2255%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2220%22>Dalhee</text></svg>'">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 0.75rem; font-weight: 700; color: #FFF;">달희 원본</span>
+              <span style="font-size: 0.6rem; color: var(--text-muted);">Reference sheet</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- User Input Prompt -->
+      <div class="form-group">
+        <label class="form-label">
+          User Request Prompt <span class="req">*</span>
+          <span style="font-size: 0.7rem; font-weight: normal; color: var(--text-muted);">Korean Supported</span>
+        </label>
+        <textarea id="promptInput" class="prompt-input" placeholder="상황이나 포즈를 입력하세요. (예: 달수가 칠판 앞에서 강의하는 모습, 달희가 안내판을 들고 주민을 맞이하는 모습)"></textarea>
+      </div>
+      
+      <!-- Mapped Action Selector -->
+      <div class="form-group">
+        <label class="form-label">Mapped Action Library (Auto/Manual)</label>
+        <select id="actionSelect" class="studio-select">
+          <option value="default">Default Pose (기본 서 있는 자세)</option>
+          <option value="teaching">Teaching (칠판 설명/강의)</option>
+          <option value="guiding">Guiding (주민 안내/인사)</option>
+          <option value="cleanup">Clean-up (봉사 활동/환경 정화)</option>
+          <option value="exercising">Exercising (체육 활동/운동)</option>
+          <option value="cooking">Cooking (요리/식사 안내)</option>
+          <option value="working">Working (행정 업무/노트북)</option>
+        </select>
+      </div>
+
+      <!-- Emotion Selector -->
+      <div class="form-group">
+        <label class="form-label">Facial Emotion</label>
+        <select id="emotionSelect" class="studio-select">
+          <option value="friendly">Friendly (친근한 미소)</option>
+          <option value="happy">Happy (기쁜 활짝 웃음)</option>
+          <option value="serious">Serious (진지한 집중)</option>
+          <option value="energetic">Energetic (활기차고 역동적)</option>
+        </select>
+      </div>
+
+      <!-- Locked outputs display -->
+      <div class="form-group">
+        <label class="form-label">Locked Output Parameters</label>
+        <div class="locked-param-card">
+          <div class="locked-item">
+            <span>Format:</span>
+            <span class="val">PNG (Transparent)</span>
+          </div>
+          <div class="locked-item">
+            <span>Resolution:</span>
+            <span class="val">3000 x 3000px</span>
+          </div>
+          <div class="locked-item">
+            <span>Background:</span>
+            <span class="val">None (Alpha channel)</span>
+          </div>
+          <div class="locked-item">
+            <span>Render style:</span>
+            <span class="val">2D Flat Vector</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Identity Lock Badge -->
+      <div class="identity-lock-badge">
+        <div class="lock-badge-header">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Identity Lock Enabled
+        </div>
+        <div class="lock-badge-body">
+          달서구 공식 캐릭터 가이드라인이 엄격하게 잠금되었습니다. 얼굴형, 색상표, 헤어스타일, 귀여운 두 눈알 비율이 고정되어 어떤 생성을 수행해도 캐릭터 붕괴(Character Drift)를 0%로 유지합니다.
+        </div>
+      </div>
+
+      <!-- Generate button -->
+      <button class="btn-generate pulse-primary" id="btnGenerate" onclick="triggerGeneration()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+        </svg>
+        Generate Character
+      </button>
+    </aside>
+
+    <!-- Column 2: Studio Canvas Workspace -->
+    <main class="workspace-panel">
+      <!-- Workspace actions header -->
+      <div class="workspace-header">
+        <div style="display: flex; flex-direction: column;">
+          <h4 style="font-family: var(--font-display); font-size: 1rem; color: white;" id="activeCanvasName">Untitled Asset</h4>
+          <span style="font-size: 0.75rem; color: var(--text-muted);" id="activeCanvasMeta">Select options and click Generate</span>
+        </div>
+          <button class="btn-accent" onclick="exportPNG()" style="padding: 0.6rem 1.2rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Export High-Res PNG
+          </button>
+        </div>
+
+      <!-- Main viewport canvas -->
+      <div class="canvas-viewport">
+        <div class="canvas-character-container" id="canvasContainer">
+          <!-- Live SVG gets injected here -->
+          <div style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+            <p style="font-weight: 600; margin-bottom: 0.5rem; color: #FFF;">Studio Screen Ready</p>
+            <p>프로프트를 입력하고 'Generate' 버튼을 누르거나<br>사전 설정을 선택하여 그리기를 시작하세요.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline flow status tracker -->
+      <div class="pipeline-container">
+        <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between;">
+          <span>GENERATION PIPELINE PROCESS</span>
+          <span id="pipelineStatusMsg" style="color: var(--color-primary);">Engine Idle</span>
+        </div>
+        <div class="pipeline-steps">
+          <div class="pipeline-connector-progress" id="pipelineProgress"></div>
+          
+          <div class="pipeline-step active" id="step1">
+            <div class="step-node">1</div>
+            <div class="step-name">Input Prompt</div>
+          </div>
+          <div class="pipeline-step" id="step2">
+            <div class="step-node">2</div>
+            <div class="step-name">Action Mapping</div>
+          </div>
+          <div class="pipeline-step" id="step3">
+            <div class="step-node">3</div>
+            <div class="step-name">Character Bible</div>
+          </div>
+          <div class="pipeline-step" id="step4">
+            <div class="step-node">4</div>
+            <div class="step-name">Drift Check</div>
+          </div>
+          <div class="pipeline-step" id="step5">
+            <div class="step-node">✓</div>
+            <div class="step-name">Render Ready</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Column 3: History Sidebar -->
+    <aside class="history-sidebar">
+      <div class="history-header">
+        <h4 style="font-family: var(--font-display); font-size: 0.95rem; color: white; display: flex; align-items: center; gap: 0.4rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Generation History
+        </h4>
+        <button class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="clearHistory()">Clear</button>
+      </div>
+      <div class="scrollable" style="flex: 1; padding: 1rem 0.75rem;">
+        <div class="history-list" id="historyList">
+          <!-- List items injected here -->
+          <div class="empty-history">
+            <div class="empty-history-icon">📦</div>
+            <p>이력이 비어 있습니다.</p>
+            <p style="font-size: 0.7rem; margin-top: 0.25rem;">생성된 파일은 로컬 저장소에 안전하게 유지됩니다.</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Admin Modal Console -->
+  <div class="modal-overlay" id="adminModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Admin Controller Console</h3>
+        <button class="btn-close" onclick="closeAdminModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Tabs -->
+        <div class="admin-tabs">
+          <button class="admin-tab-btn active" onclick="switchAdminTab('mappings')">Action Mappings</button>
+          <button class="admin-tab-btn" onclick="switchAdminTab('bible')">Character Bible Rules</button>
+          <button class="admin-tab-btn" onclick="switchAdminTab('drift')">Drift Prevention Logs</button>
+        </div>
+
+        <!-- Mappings Tab -->
+        <div class="admin-tab-content active" id="tab-mappings">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">
+            사용자의 입력 텍스트 키워드에 따라 어떤 공식 동작(Action)을 트리거할지 매핑 사전 규칙을 수정합니다.
+          </p>
+          <div class="mapping-grid" id="mappingGrid">
+            <!-- Programmatically populated -->
+          </div>
+        </div>
+
+        <!-- Bible Tab -->
+        <div class="admin-tab-content" id="tab-bible">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">
+            달서구 캐릭터 바이블의 고정 제약 사항으로, 수정 불가능한 엄격한 규약 항목(Identity Lock) 리스트입니다.
+          </p>
+          <div class="admin-rules-list">
+            <div class="rule-item-card locked">
+              <div class="rule-item-title">얼굴 구조 고정 (Identity Lock: Face)</div>
+              <div class="rule-item-desc">달수(가로 타원형, 두 검은 점눈, 귀여운 미소선), 달희(눈 영역 보이지 않거나 감은 눈, 미소선). 두 캐릭터 모두 코와 치아, 눈썹을 그리지 않음.</div>
+            </div>
+            <div class="rule-item-card locked">
+              <div class="rule-item-title">헤어스타일 규격 (Identity Lock: Hair)</div>
+              <div class="rule-item-desc">달수(구름 모양 머리, 상단 3개 봉우리, 하단 2개 엽단 배치), 달희(버섯 모양 머리, 앞머리 6가닥). 대칭형 유지.</div>
+            </div>
+            <div class="rule-item-card locked">
+              <div class="rule-item-title">공식 색상표 잠금 (Identity Lock: Colors)</div>
+              <div class="rule-item-desc">머리카락(#604C3F), 피부(#EBC8A3), 의상(#B28247), 윤곽선(#231815) Hex 코드가 코드 내부적으로 하드코딩되어 강제 고정됩니다.</div>
+            </div>
+            <div class="rule-item-card locked">
+              <div class="rule-item-title">비율 및 윤곽 규격 (Identity Lock: Silhouette)</div>
+              <div class="rule-item-desc">2D 플랫 벡터 렌더링 스타일, 최소한의 2D 명암 처리, 등각 투영(Orthographic) 뷰 고정. 3D 렌더링, 클레이 모델, 웹툰/망가 데포르메 적용을 엄격히 차단합니다.</div>
+            </div>
+            <div class="rule-item-card locked" style="border-left-color: var(--color-warning);">
+              <div class="rule-item-title">생성 방식 (Reference Character Mode)</div>
+              <div class="rule-item-desc">새로운 캐릭터 임의 생성 금지. 공식 원본 파일(기본-달수.png / 기본-달희.png)을 항상 생성 엔진의 Reference Image 슬롯에 바인딩하여 '공식 캐릭터를 참조하여 변형'하는 방식만 수행하도록 제약합니다.</div>
+            </div>
+            <div class="rule-item-card locked" style="border-left-color: var(--color-warning);">
+              <div class="rule-item-title">엔진 제어 시스템 프롬프트 (System Prompt)</div>
+              <div class="rule-item-desc" style="font-family: monospace; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px; color: #F59E0B; margin-top: 0.25rem;">
+                첨부된 캐릭터를 그대로 유지한다.<br>
+                얼굴 구조 변경 금지 / 눈 모양 변경 금지<br>
+                신체 비율 변경 금지 / 복장 변경 금지 / 색상 변경 금지<br>
+                캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drift Logs Tab -->
+        <div class="admin-tab-content" id="tab-drift">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.5rem;">
+            이미지 생성 엔진 해석 단계에서 발생한 캐릭터 붕괴 시도(Drift Detection) 및 자동차단 복구 이력입니다.
+          </p>
+          <div class="drift-log-list" id="driftLogList">
+            <!-- Populated on gen -->
+            <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.8rem;">
+              현재 감지된 캐릭터 붕괴 위반 시도가 없습니다.
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeAdminModal()">Close</button>
+        <button class="btn-accent" onclick="saveAdminMappings()">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
