@@ -251,7 +251,7 @@ function loadApiCredentials() {
   // Method 2: Development Stage default preconfigured credentials
   let credentials = {
     apiType: 'studio',
-    studioKey: 'AIzaSyDbXvGVIoHumx5v_yf74KDEG6D-cU0IEjA',
+    studioKey: '',
     projectId: '914250995391',
     accessToken: '',
     remember: true,
@@ -451,7 +451,7 @@ async function triggerGeneration() {
           } else {
             // LIVE GOOGLE IMAGEN 3 CALL
             const apiType = els.apiTypeSelect.value;
-            const studioKey = els.apiStudioKey.value.trim() || 'AIzaSyDbXvGVIoHumx5v_yf74KDEG6D-cU0IEjA';
+            const studioKey = els.apiStudioKey.value.trim();
             const projectId = els.apiProjectId.value.trim() || '914250995391';
             const token = els.apiAccessToken.value.trim();
 

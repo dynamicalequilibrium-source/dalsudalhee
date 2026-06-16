@@ -48,7 +48,7 @@ exports.handler = async (event, context) => {
     let isGeminiCall = false;
 
     // 1. Check if Server-Side Service Account is configured (Method 2 Permanent Connection)
-    if (process.env.GOOGLE_CREDS_JSON) {
+    if (apiType === 'vertex' && process.env.GOOGLE_CREDS_JSON) {
       try {
         console.log('[Netlify Function] Authenticating with server-side Google Service Account...');
         const authInfo = await getVertexToken();
@@ -109,7 +109,13 @@ exports.handler = async (event, context) => {
         };
       } else {
         // Google AI Studio with API Key -> Calls gemini-2.5-flash-image
-        const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDbXvGVIoHumx5v_yf74KDEG6D-cU0IEjA';
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'GEMINI_API_KEY is not configured in Netlify environment variables. Please add GEMINI_API_KEY in Netlify settings.' })
+          };
+        }
         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
         isGeminiCall = true;
         requestBody = {

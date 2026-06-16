@@ -55,7 +55,7 @@ app.post('/api/generate-image', async (req, res) => {
     let isGeminiCall = false;
 
     // 1. Check if Server-Side Service Account is configured (Method 2 Permanent Connection)
-    if (process.env.GOOGLE_CREDS_JSON) {
+    if (apiType === 'vertex' && process.env.GOOGLE_CREDS_JSON) {
       try {
         console.log('[Proxy] Generating access token using server-side Google Service Account...');
         const authInfo = await getVertexToken();
@@ -113,7 +113,10 @@ app.post('/api/generate-image', async (req, res) => {
         };
       } else {
         // Google AI Studio with API Key -> Calls gemini-2.5-flash-image
-        const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDbXvGVIoHumx5v_yf74KDEG6D-cU0IEjA';
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+          return res.status(400).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add GEMINI_API_KEY to your .env file.' });
+        }
         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
         isGeminiCall = true;
         requestBody = {
