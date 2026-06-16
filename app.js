@@ -338,6 +338,108 @@ async function getReferenceImageBase64(charKey) {
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Helper to remove white background from generated character illustrations using edge-seeded flood fill BFS
+async function makeImageTransparent(imgSrc) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // Visited array for flood fill BFS
+        const visited = new Uint8Array(width * height);
+        const queue = [];
+        
+        // Helper to check if pixel is near-white (threshold 238 covers slight compression artifacts)
+        function isNearWhite(r, g, b) {
+          return r > 238 && g > 238 && b > 238;
+        }
+        
+        // Seed from borders
+        for (let x = 0; x < width; x++) {
+          let idx = x;
+          let dIdx = idx * 4;
+          if (isNearWhite(data[dIdx], data[dIdx + 1], data[dIdx + 2])) {
+            queue.push(idx);
+            visited[idx] = 1;
+          }
+          idx = (height - 1) * width + x;
+          dIdx = idx * 4;
+          if (isNearWhite(data[dIdx], data[dIdx + 1], data[dIdx + 2])) {
+            queue.push(idx);
+            visited[idx] = 1;
+          }
+        }
+        for (let y = 0; y < height; y++) {
+          let idx = y * width;
+          let dIdx = idx * 4;
+          if (isNearWhite(data[dIdx], data[dIdx + 1], data[dIdx + 2])) {
+            queue.push(idx);
+            visited[idx] = 1;
+          }
+          idx = y * width + (width - 1);
+          dIdx = idx * 4;
+          if (isNearWhite(data[dIdx], data[dIdx + 1], data[dIdx + 2])) {
+            queue.push(idx);
+            visited[idx] = 1;
+          }
+        }
+        
+        // BFS
+        let head = 0;
+        while (head < queue.length) {
+          const curr = queue[head++];
+          const cx = curr % width;
+          const cy = Math.floor(curr / width);
+          
+          const dIdx = curr * 4;
+          data[dIdx + 3] = 0; // Alpha = 0 (Transparent)
+          
+          const neighbors = [
+            [cx + 1, cy],
+            [cx - 1, cy],
+            [cx, cy + 1],
+            [cx, cy - 1]
+          ];
+          
+          for (const [nx, ny] of neighbors) {
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+              const nIdx = ny * width + nx;
+              if (!visited[nIdx]) {
+                const nDIdx = nIdx * 4;
+                if (isNearWhite(data[nDIdx], data[nDIdx + 1], data[nDIdx + 2])) {
+                  queue.push(nIdx);
+                  visited[nIdx] = 1;
+                }
+              }
+            }
+          }
+        }
+        
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (err) {
+        console.warn('Transparency processing blocked by browser security (likely file:// protocol):', err);
+        resolve(imgSrc);
+      }
+    };
+    img.onerror = () => {
+      resolve(imgSrc);
+    };
+    img.src = imgSrc;
+  });
+}
+
 // Trigger Pipeline Generation Process
 async function triggerGeneration() {
   const promptText = els.promptInput.value;
@@ -416,7 +518,9 @@ async function triggerGeneration() {
       // SIMULATED DEMO MODE
       // Match closest illustration to mock output
       const matchedAsset = matchOfficialDbAsset(promptText);
-      appState.currentImgFile = 'example/' + matchedAsset.file;
+      const rawImgSrc = 'example/' + matchedAsset.file;
+      const transparentImg = await makeImageTransparent(rawImgSrc);
+      appState.currentImgFile = transparentImg;
       
       // Log the exact simulated API request and response JSON payloads for inspector verification!
       const simulatedRequestPayload = {
@@ -576,7 +680,9 @@ async function triggerGeneration() {
       }
 
       if (outputB64) {
-        appState.currentImgFile = 'data:image/png;base64,' + outputB64;
+        const rawImgSrc = 'data:image/png;base64,' + outputB64;
+        const transparentImg = await makeImageTransparent(rawImgSrc);
+        appState.currentImgFile = transparentImg;
         const sourceName = useProxy ? 'Proxy Server' : (apiType === 'studio' ? 'AI Studio (Direct)' : 'Vertex AI (Direct)');
         addDriftLog(`[API Response] Image successfully synthesized and received via ${sourceName}.`, 'success');
         renderGeneratedOutput(`<img src="${appState.currentImgFile}" alt="Generated Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35));" />`, `IMAGEN_OUTPUT`);
