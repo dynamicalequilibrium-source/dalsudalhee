@@ -186,14 +186,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Toggle simulation mode fields
 function toggleApiSimulation() {
-  const isSimulated = els.apiSimulateCheck.checked;
+  const isSimulated = els.apiSimulateCheck ? els.apiSimulateCheck.checked : false;
   appState.simulateMode = isSimulated;
   
   if (isSimulated) {
-    els.apiRealConfigFields.style.display = 'none';
+    if (els.apiRealConfigFields) els.apiRealConfigFields.style.display = 'none';
     addDriftLog('[System] Google Imagen API Simulation mode enabled.', 'success');
   } else {
-    els.apiRealConfigFields.style.display = 'flex';
+    if (els.apiRealConfigFields) els.apiRealConfigFields.style.display = 'flex';
     addDriftLog('[System] Switched to Google Live API mode. Please configure credentials.', 'info');
     toggleApiType();
   }
@@ -216,11 +216,11 @@ function toggleApiType() {
   if (!els.apiTypeSelect) return;
   const apiType = els.apiTypeSelect.value;
   if (apiType === 'studio') {
-    els.apiStudioFields.style.display = 'flex';
-    els.apiVertexFields.style.display = 'none';
+    if (els.apiStudioFields) els.apiStudioFields.style.display = 'flex';
+    if (els.apiVertexFields) els.apiVertexFields.style.display = 'none';
   } else {
-    els.apiStudioFields.style.display = 'none';
-    els.apiVertexFields.style.display = 'flex';
+    if (els.apiStudioFields) els.apiStudioFields.style.display = 'none';
+    if (els.apiVertexFields) els.apiVertexFields.style.display = 'flex';
   }
   saveApiCredentials();
 }
@@ -231,10 +231,10 @@ function saveApiCredentials() {
   const remember = els.apiRememberCheck.checked;
   if (remember) {
     const credentials = {
-      apiType: els.apiTypeSelect.value,
-      studioKey: els.apiStudioKey.value.trim(),
-      projectId: els.apiProjectId.value.trim(),
-      accessToken: els.apiAccessToken.value.trim(),
+      apiType: els.apiTypeSelect ? els.apiTypeSelect.value : 'studio',
+      studioKey: els.apiStudioKey ? els.apiStudioKey.value.trim() : '',
+      projectId: els.apiProjectId ? els.apiProjectId.value.trim() : '',
+      accessToken: els.apiAccessToken ? els.apiAccessToken.value.trim() : '',
       remember: true,
       simulate: els.apiSimulateCheck ? els.apiSimulateCheck.checked : false
     };
@@ -269,10 +269,10 @@ function loadApiCredentials() {
   
   if (els.apiRememberCheck) {
     els.apiRememberCheck.checked = credentials.remember;
-    els.apiTypeSelect.value = credentials.apiType;
-    els.apiStudioKey.value = credentials.studioKey;
-    els.apiProjectId.value = credentials.projectId;
-    els.apiAccessToken.value = credentials.accessToken;
+    if (els.apiTypeSelect) els.apiTypeSelect.value = credentials.apiType;
+    if (els.apiStudioKey) els.apiStudioKey.value = credentials.studioKey;
+    if (els.apiProjectId) els.apiProjectId.value = credentials.projectId;
+    if (els.apiAccessToken) els.apiAccessToken.value = credentials.accessToken;
     
     if (els.apiSimulateCheck) {
       els.apiSimulateCheck.checked = credentials.simulate;
@@ -474,10 +474,10 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
       
     } else {
       // LIVE GOOGLE IMAGEN 3 CALL
-      const apiType = els.apiTypeSelect.value;
-      const studioKey = els.apiStudioKey.value.trim();
-      const projectId = els.apiProjectId.value.trim() || '914250995391';
-      const token = els.apiAccessToken.value.trim();
+      const apiType = els.apiTypeSelect ? els.apiTypeSelect.value : 'studio';
+      const studioKey = (els.apiStudioKey && els.apiStudioKey.value.trim()) || window.DEV_GEMINI_API_KEY || '';
+      const projectId = (els.apiProjectId && els.apiProjectId.value.trim()) || '914250995391';
+      const token = els.apiAccessToken ? els.apiAccessToken.value.trim() : '';
 
       let useProxy = window.location.protocol !== 'file:';
       let resData = null;
@@ -676,8 +676,8 @@ function resetBtnAndCanvas() {
 
 // Stubs and matching fallbacks for Simulation Mode
 function getCharacterDisplayName(charKey) {
-  if (charKey === 'dalsu') return '달수 (Dalsu)';
-  if (charKey === 'dalhee') return '달희 (Dalhee)';
+  if (charKey === 'dalsu') return '달수';
+  if (charKey === 'dalhee') return '달희';
   if (charKey === 'both') return '달수와 달희';
   return 'Character';
 }
