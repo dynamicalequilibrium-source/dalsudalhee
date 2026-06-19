@@ -878,20 +878,53 @@ function updatePipelineStep(stepIndex, statusClass, statusText) {
   }
 }
 
-// Export PNG directly from file/base64 path
-function exportPNG() {
+// Export PNG directly from file/base64 path (handles cross-origin downloads from Supabase)
+async function exportPNG() {
   if (!appState.currentImgFile) {
     alert('다운로드할 캐릭터가 없습니다.');
     return;
   }
   
-  const link = document.createElement('a');
-  link.href = appState.currentImgFile;
-  link.download = `${els.activeCanvasName.textContent}.png`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  addDriftLog(`[Export] Downloaded generated high-res PNG file.`, 'success');
+  // If it's a local base64 string, download directly
+  if (appState.currentImgFile.startsWith('data:')) {
+    const link = document.createElement('a');
+    link.href = appState.currentImgFile;
+    link.download = `${els.activeCanvasName.textContent}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addDriftLog(`[Export] Downloaded generated high-res PNG file.`, 'success');
+    return;
+  }
+
+  // If it's a URL (e.g. Supabase Storage link or local relative path), fetch as blob to bypass cross-origin download restrictions
+  try {
+    addDriftLog(`[Export] Fetching image file for download...`, 'info');
+    const response = await fetch(appState.currentImgFile);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = `${els.activeCanvasName.textContent}.png`;
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+    
+    addDriftLog(`[Export] Downloaded generated high-res PNG file.`, 'success');
+  } catch (error) {
+    console.error('Failed to download image:', error);
+    // Fallback: open in new tab if fetch fails
+    const link = document.createElement('a');
+    link.href = appState.currentImgFile;
+    link.target = '_blank';
+    link.click();
+    addDriftLog(`[Export Fallback] Opened image in new tab due to download error.`, 'warning');
+  }
 }
 
 // History Storage Management (Supabase DB & Storage Integration)
