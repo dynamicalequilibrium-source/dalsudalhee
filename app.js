@@ -464,41 +464,45 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
     
     if (appState.simulateMode) {
       // SIMULATED DEMO MODE
-      // Match closest illustration to mock output
       const matchedAsset = matchOfficialDbAsset(promptText);
-      appState.currentImgFile = 'example/' + matchedAsset.file;
-      
-      // Log the exact simulated API request and response JSON payloads for inspector verification!
-      const simulatedRequestPayload = {
-        instances: [
-          {
-            prompt: finalPrompt,
-            image: {
-              bytesBase64Encoded: refBase64.substring(0, 40) + "...[BASE64_BYTES]..."
+      const useProxy = window.location.protocol !== 'file:';
+
+      if (useProxy) {
+        addDriftLog(`[API Request] Dispatching simulated generation to proxy...`, 'info');
+        try {
+          const res = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              simulate: true,
+              matchedFile: matchedAsset.file,
+              prompt: promptText,
+              character: appState.activeCharacter,
+              action: appState.activeAction,
+              generationCount: appState.generationCount + 1
+            })
+          });
+          
+          if (res.ok) {
+            const resData = await res.json();
+            if (resData && resData.success && resData.item) {
+              appState.currentImgFile = resData.item.img_url;
+              addDriftLog(`[API Response] Simulated metadata successfully registered in database.`, 'success');
+              renderGeneratedOutput(
+                `<img src="${appState.currentImgFile}" alt="Official Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35)); animation: float-char 6s ease-in-out infinite;" />`,
+                resData.item.name,
+                resData.item
+              );
+              return;
             }
           }
-        ],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: "1:1",
-          imageFormat: "png",
-          outputMimeType: "image/png"
+        } catch (e) {
+          console.warn('Simulation database save failed, falling back to local only:', e);
         }
-      };
-      
-      const simulatedResponsePayload = {
-        predictions: [
-          {
-            bytesBase64Encoded: "...[GENERATED_PNG_BASE64_BYTES]...",
-            mimeType: "image/png"
-          }
-        ]
-      };
-      
-      addDriftLog(`[API Request] POST https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/imagen-3.0-capability-001:predict`, 'info');
-      addDriftLog(`[Payload Sent] ${JSON.stringify(simulatedRequestPayload)}`, 'info');
-      addDriftLog(`[API Response Received] ${JSON.stringify(simulatedResponsePayload)}`, 'success');
-      
+      }
+
+      // Fallback for file:// protocol or failed request
+      appState.currentImgFile = 'example/' + matchedAsset.file;
       await sleep(400);
       renderGeneratedOutput(`<img src="${appState.currentImgFile}" alt="Official Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35)); animation: float-char 6s ease-in-out infinite;" />`, matchedAsset.file.replace('.png', ''));
       
@@ -627,10 +631,20 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
         }
       }
 
-      if (outputB64) {
-        appState.currentImgFile = 'data:image/png;base64,' + outputB64;
+      if (resData && resData.success && resData.item) {
+        appState.currentImgFile = resData.item.img_url;
         const sourceName = useProxy ? 'Proxy Server' : (apiType === 'studio' ? 'AI Studio (Direct)' : 'Vertex AI (Direct)');
-        addDriftLog(`[API Response] Image successfully synthesized and received via ${sourceName}.`, 'success');
+        addDriftLog(`[API Response] Image successfully synthesized, stored in Supabase, and received via ${sourceName}.`, 'success');
+        renderGeneratedOutput(
+          `<img src="${appState.currentImgFile}" alt="Generated Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35));" />`,
+          resData.item.name,
+          resData.item
+        );
+      } else if (outputB64) {
+        // Fallback for file:// where we have direct outputB64
+        appState.currentImgFile = 'data:image/png;base64,' + outputB64;
+        const sourceName = apiType === 'studio' ? 'AI Studio (Direct)' : 'Vertex AI (Direct)';
+        addDriftLog(`[API Response] Image successfully synthesized and received via ${sourceName} (Local Only).`, 'success');
         renderGeneratedOutput(`<img src="${appState.currentImgFile}" alt="Generated Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35));" />`, `IMAGEN_OUTPUT`);
       } else {
         addDriftLog(`[API Error] Response payload is missing image data.`, 'danger');
@@ -648,7 +662,7 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
 }
 
 // Render generated results helper
-function renderGeneratedOutput(html, nameBase) {
+function renderGeneratedOutput(html, nameBase, savedItem = null) {
   els.canvasContainer.innerHTML = html;
   els.canvasContainer.classList.remove('loading');
   if (els.canvasLoadingOverlay) {
@@ -656,23 +670,46 @@ function renderGeneratedOutput(html, nameBase) {
   }
   
   appState.generationCount++;
-  const finalAssetName = `${nameBase}_${appState.generationCount}`;
+  const finalAssetName = savedItem ? savedItem.name : `${nameBase}_${appState.generationCount}`;
   els.activeCanvasName.textContent = finalAssetName;
   
-  const charName = getCharacterDisplayName(appState.activeCharacter);
-  const actionName = getActionDisplayName(appState.activeAction);
+  const charName = getCharacterDisplayName(savedItem ? savedItem.character : appState.activeCharacter);
+  const actionName = getActionDisplayName(savedItem ? savedItem.action : appState.activeAction);
   els.activeCanvasMeta.textContent = `${charName} | ${actionName} | Google Imagen 생성 완료`;
   
   // Save to history
-  saveToHistory({
-    id: Date.now(),
-    name: finalAssetName,
-    character: appState.activeCharacter,
-    action: appState.activeAction,
-    prompt: els.promptInput.value,
-    imgFile: appState.currentImgFile,
-    timestamp: new Date().toLocaleTimeString()
-  });
+  if (savedItem) {
+    const historyItem = {
+      id: savedItem.id,
+      name: savedItem.name,
+      character: savedItem.character,
+      action: savedItem.action,
+      prompt: savedItem.prompt,
+      imgFile: savedItem.img_url,
+      timestamp: new Date(savedItem.created_at).toLocaleTimeString()
+    };
+    appState.history.unshift(historyItem);
+    if (appState.history.length > 20) {
+      appState.history.pop();
+    }
+    renderHistoryList();
+  } else {
+    // Local fallback for direct browser API calls
+    const localItem = {
+      id: Date.now(),
+      name: finalAssetName,
+      character: appState.activeCharacter,
+      action: appState.activeAction,
+      prompt: els.promptInput.value,
+      imgFile: appState.currentImgFile,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    appState.history.unshift(localItem);
+    if (appState.history.length > 20) {
+      appState.history.pop();
+    }
+    renderHistoryList();
+  }
   
   // Reset button state
   els.btnGenerate.disabled = false;
@@ -853,118 +890,34 @@ function exportPNG() {
   addDriftLog(`[Export] Downloaded generated high-res PNG file.`, 'success');
 }
 
-// History Storage Management (IndexedDB)
-const dbName = 'DalseoStudioDB';
-const storeName = 'history';
-
-function initDB() {
-  return new Promise((resolve, reject) => {
-    // Open DB version 2 to make sure version upgrade runs for anyone who tested version 1
-    const request = indexedDB.open(dbName, 2);
-    request.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(storeName)) {
-        db.createObjectStore(storeName, { keyPath: 'id' });
-      }
-    };
-    request.onsuccess = (e) => resolve(e.target.result);
-    request.onerror = (e) => reject(e.target.error);
-  });
-}
-
-async function getHistoryFromDB() {
-  try {
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.getAll();
-      request.onsuccess = () => {
-        const items = request.result || [];
-        items.sort((a, b) => b.id - a.id);
-        resolve(items);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  } catch (err) {
-    console.error('Failed to read from IndexedDB, falling back to empty', err);
-    return [];
-  }
-}
-
-async function addHistoryItemDB(item) {
-  try {
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.put(item);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  } catch (err) {
-    console.error('Failed to add item to IndexedDB', err);
-    throw err;
-  }
-}
-
-async function deleteHistoryItemDB(id) {
-  try {
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.delete(id);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  } catch (err) {
-    console.error('Failed to delete item from IndexedDB', err);
-    throw err;
-  }
-}
-
-async function clearHistoryDB() {
-  try {
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.clear();
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  } catch (err) {
-    console.error('Failed to clear IndexedDB store', err);
-    throw err;
-  }
-}
-
+// History Storage Management (Supabase DB & Storage Integration)
 async function loadHistory() {
   try {
-    appState.history = await getHistoryFromDB();
-  } catch (err) {
-    console.error('Failed to load history', err);
-    appState.history = [];
-  } finally {
-    renderHistoryList();
-  }
-}
-
-async function saveToHistory(item) {
-  try {
-    appState.history.unshift(item);
-    if (appState.history.length > 12) {
-      const popped = appState.history.pop();
-      try {
-        await deleteHistoryItemDB(popped.id);
-      } catch (err) {
-        console.error('Failed to prune old history item:', err);
+    if (window.location.protocol === 'file:') {
+      appState.history = [];
+      renderHistoryList();
+      return;
+    }
+    
+    const res = await fetch('/api/get-history');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.items) {
+        // Map database row keys to client state keys
+        appState.history = data.items.map(item => ({
+          id: item.id,
+          name: item.name,
+          character: item.character,
+          action: item.action,
+          prompt: item.prompt,
+          imgFile: item.img_url,
+          timestamp: new Date(item.created_at).toLocaleTimeString()
+        }));
       }
     }
-    await addHistoryItemDB(item);
   } catch (err) {
-    console.error('Failed to save item to DB, keeping in-memory:', err);
+    console.error('Failed to load global history from Supabase:', err);
+    appState.history = [];
   } finally {
     renderHistoryList();
   }
@@ -976,7 +929,7 @@ function renderHistoryList() {
       <div class="empty-history">
         <div class="empty-history-icon">📦</div>
         <p>생성 이력이 없습니다.</p>
-        <p style="font-size: 0.7rem; margin-top: 0.25rem;">생성된 이미지는 안전하게 보관됩니다.</p>
+        <p style="font-size: 0.7rem; margin-top: 0.25rem;">모든 사용자가 공유하는 보관함입니다.</p>
       </div>
     `;
     return;
@@ -1032,27 +985,37 @@ function loadHistoryItem(id) {
   const actionName = getActionDisplayName(item.action);
   els.activeCanvasMeta.textContent = `${charName} | ${actionName} | 불러옴`;
   
-  addDriftLog(`[History] Loaded asset "${item.name}" from IndexedDB.`, 'success');
+  addDriftLog(`[History] Loaded asset "${item.name}" from database.`, 'success');
 }
 
 async function deleteHistoryItem(event, id) {
   event.stopPropagation();
-  try {
-    appState.history = appState.history.filter(h => h.id !== id);
-    await deleteHistoryItemDB(id);
-  } catch (err) {
-    console.error('Failed to delete history item:', err);
-  } finally {
-    renderHistoryList();
-    renderEmptyCanvas();
+  if (confirm('이 이미지를 생성 이력에서 정말 삭제하시겠습니까? 데이터베이스에서 영구적으로 삭제됩니다.')) {
+    try {
+      appState.history = appState.history.filter(h => h.id !== id);
+      if (window.location.protocol !== 'file:') {
+        await fetch(`/api/delete-history?id=${id}`, {
+          method: 'DELETE'
+        });
+      }
+    } catch (err) {
+      console.error('Failed to delete history item:', err);
+    } finally {
+      renderHistoryList();
+      renderEmptyCanvas();
+    }
   }
 }
 
 async function clearHistory() {
-  if (confirm('모든 생성 이력을 삭제하시겠습니까?')) {
+  if (confirm('모든 사용자의 생성 이력을 삭제하시겠습니까? 데이터베이스에서 전체 이미지 레코드가 영구적으로 지워집니다.')) {
     try {
       appState.history = [];
-      await clearHistoryDB();
+      if (window.location.protocol !== 'file:') {
+        await fetch('/api/delete-history?all=true', {
+          method: 'DELETE'
+        });
+      }
     } catch (err) {
       console.error('Failed to clear history:', err);
     } finally {
