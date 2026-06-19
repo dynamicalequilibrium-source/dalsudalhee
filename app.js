@@ -525,10 +525,14 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               prompt: finalPrompt, // 완성된 프롬프트 전송 (이중 구성 방지)
+              userPrompt: promptText, // 원본 프롬프트 전송 (이력 저장용)
               refImages: refImages, // 방안 2: 레퍼런스 이미지 배열 전송
               apiType: apiType,
               projectId: projectId,
-              token: token
+              token: token,
+              character: appState.activeCharacter,
+              action: appState.activeAction,
+              generationCount: appState.generationCount + 1
             })
           });
           

@@ -78,7 +78,8 @@ async function callSupabase({ path, method = 'GET', headers = {}, body = null, i
 // 1. Unified Endpoint to Google AI Studio/Vertex AI (with Supabase saving)
 app.post('/api/generate-image', async (req, res) => {
   try {
-    const { prompt, apiType, projectId, token, simulate, character, action, matchedFile, generationCount } = req.body;
+    const { prompt, userPrompt, apiType, projectId, token, simulate, character, action, matchedFile, generationCount } = req.body;
+    const dbPrompt = userPrompt || prompt;
     const refImages = req.body.refImages || (req.body.refBase64 ? [req.body.refBase64] : []);
     const refBase64 = refImages[0] || '';
 
@@ -103,7 +104,7 @@ app.post('/api/generate-image', async (req, res) => {
           name: finalAssetName,
           character: character || 'dalsu',
           action: action || 'default',
-          prompt: prompt,
+          prompt: dbPrompt,
           img_url: staticImgUrl,
           is_simulated: true
         }
@@ -259,7 +260,7 @@ app.post('/api/generate-image', async (req, res) => {
         name: finalAssetName,
         character: character || 'dalsu',
         action: action || 'default',
-        prompt: prompt,
+        prompt: dbPrompt,
         img_url: publicImgUrl,
         is_simulated: false
       }

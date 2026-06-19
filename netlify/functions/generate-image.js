@@ -93,7 +93,8 @@ exports.handler = async (event, context) => {
 
   try {
     const body = JSON.parse(event.body);
-    const { prompt, apiType, projectId, token, simulate, character, action, matchedFile, generationCount } = body;
+    const { prompt, userPrompt, apiType, projectId, token, simulate, character, action, matchedFile, generationCount } = body;
+    const dbPrompt = userPrompt || prompt;
     const refImages = body.refImages || (body.refBase64 ? [body.refBase64] : []);
     const refBase64 = refImages[0] || '';
 
@@ -123,7 +124,7 @@ exports.handler = async (event, context) => {
           name: finalAssetName,
           character: character || 'dalsu',
           action: action || 'default',
-          prompt: prompt,
+          prompt: dbPrompt,
           img_url: staticImgUrl,
           is_simulated: true
         }
@@ -299,7 +300,7 @@ exports.handler = async (event, context) => {
         name: finalAssetName,
         character: character || 'dalsu',
         action: action || 'default',
-        prompt: prompt,
+        prompt: dbPrompt,
         img_url: publicImgUrl,
         is_simulated: false
       }
