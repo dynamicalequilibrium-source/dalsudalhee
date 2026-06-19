@@ -125,7 +125,7 @@ header {
 /* App Main Layout */
 .app-container {
   display: grid;
-  grid-template-columns: 320px 1fr 560px;
+  grid-template-columns: 320px 1fr 840px;
   flex: 1;
   height: calc(100vh - 70px);
   overflow: hidden;
@@ -742,11 +742,11 @@ select.studio-select:focus {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
-  padding: 0.75rem;
+  padding: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
   align-items: center;
   position: relative;
   overflow: hidden;
@@ -763,10 +763,10 @@ select.studio-select:focus {
 }
 
 .history-preview {
-  width: 100px;
-  height: 100px;
+  width: 150px;
+  height: 150px;
   background-color: #0B0F19;
-  border-radius: 0.25rem;
+  border-radius: 0.375rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -782,25 +782,25 @@ select.studio-select:focus {
 .history-details {
   flex: 1;
   min-width: 0;
-  padding-right: 24px;
+  padding-right: 28px;
 }
 
 .history-prompt {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 500;
   color: var(--text-main);
-  line-height: 1.4;
+  line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .history-meta {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
-  margin-top: 0.35rem;
+  margin-top: 0.5rem;
   display: flex;
   gap: 0.5rem;
 }
