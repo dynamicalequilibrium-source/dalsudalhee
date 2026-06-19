@@ -125,7 +125,7 @@ header {
 /* App Main Layout */
 .app-container {
   display: grid;
-  grid-template-columns: 320px 1fr 280px;
+  grid-template-columns: 320px 1fr 560px;
   flex: 1;
   height: calc(100vh - 70px);
   overflow: hidden;
@@ -459,8 +459,8 @@ select.studio-select:focus {
 }
 
 .canvas-character-container {
-  width: 480px;
-  height: 480px;
+  width: 380px;
+  height: 380px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -763,8 +763,8 @@ select.studio-select:focus {
 }
 
 .history-preview {
-  width: 50px;
-  height: 50px;
+  width: 100px;
+  height: 100px;
   background-color: #0B0F19;
   border-radius: 0.25rem;
   display: flex;
@@ -782,13 +782,17 @@ select.studio-select:focus {
 .history-details {
   flex: 1;
   min-width: 0;
+  padding-right: 24px;
 }
 
 .history-prompt {
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-main);
-  white-space: nowrap;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -796,7 +800,7 @@ select.studio-select:focus {
 .history-meta {
   font-size: 0.7rem;
   color: var(--text-muted);
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
   display: flex;
   gap: 0.5rem;
 }
