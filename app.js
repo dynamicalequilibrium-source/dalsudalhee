@@ -501,12 +501,21 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
             resData = await res.json();
           } else {
             const errText = await res.text();
-            addDriftLog(`[Proxy Warning] Proxy server returned status ${res.status}: ${errText}. Falling back to direct browser call.`, 'warning');
-            useProxy = false;
+            let parsedErr = errText;
+            try {
+              const parsed = JSON.parse(errText);
+              parsedErr = parsed.error || errText;
+            } catch (e) {}
+            addDriftLog(`[Proxy Error] Status ${res.status}: ${parsedErr}`, 'danger');
+            alert(`서버 생성 오류 (Status ${res.status}): ${parsedErr}\n\nNetlify 환경 변수 설정이나 API 키가 올바른지 확인해 주세요.`);
+            resetBtnAndCanvas();
+            return;
           }
         } catch (e) {
-          addDriftLog(`[Proxy Connection Fail] Local proxy server is not reachable. Falling back to direct browser call.`, 'warning');
-          useProxy = false;
+          addDriftLog(`[Proxy Connection Fail] ${e.message}`, 'danger');
+          alert(`서버 연결 실패: ${e.message}\n\n네트워크나 서버 상태를 확인해 주세요.`);
+          resetBtnAndCanvas();
+          return;
         }
       }
 
