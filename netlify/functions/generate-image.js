@@ -60,9 +60,19 @@ exports.handler = async (event, context) => {
       }
     }
 
-    const systemInstructions = `첨부된 캐릭터를 그대로 유지한다. 얼굴 구조 변경 금지, 눈 모양 변경 금지, 신체 비율 변경 금지, 복장 변경 금지, 색상 변경 금지. 캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.
-배경은 아무것도 없는 투명 또는 흰색 단색 배경으로만 설정하고, 캐릭터 뒤에 도시, 자연, 사물 등의 어떠한 배경 환경이나 장면도 그리지 마십시오. (Absolutely no background. Render ONLY the character on a clean, solid white or transparent background. Do not draw any scenery, buildings, or environment behind the character.)
-이미지 내부에 어떠한 글자, 문자, 단어, 자막도 포함하지 마십시오. (Absolutely no text. Do not include any words, letters, subtitles, or labels inside the image.)`;
+    const systemInstructions = `[Style Guide: 2D flat vector cartoon character, bold black outlines, solid white background, no text]
+Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limbs and no neck.
+- Dalsu (달수): Always has fluffy, cloud-shaped dark brown hair (#604C3F) that surrounds his entire head, two simple black dot eyes, and a simple smiling mouth line.
+- Dalhee (달희): Always has mushroom-shaped dark brown hair (#604C3F) with bangs completely covering her forehead and eyes (no eyes or eyebrows visible), and a simple smiling mouth line.
+- Costume: If a specific outfit (e.g. suit, dress, uniform) is requested, draw it adapted to their chubby 2-head-tall chibi bodies (short sleeves, short pants, oversized tie, cute fit).
+- Background & Floor: The background and floor must be seamless solid white (#FFFFFF). Omit any ground shadows, foot shadows, or gray ellipses under their feet. The feet must stand on pure white ground with no shadow indicators.
+
+[한국어 캐릭터 가이드]
+달수와 달희는 팔다리가 짧고 목이 없는 2등신 SD 마스코트 캐릭터입니다.
+- 달수(Dalsu): 머리 전체를 포근하게 감싸는 갈색 구름 모양 머리, 검은색 점 눈 2개, 웃는 입선.
+- 달희(Dalhee): 이마와 눈을 완전히 덮은 갈색 버섯 모양 머리(눈이나 눈썹 노출 금지), 웃는 입선.
+- 의상: 요청된 의상(예: 정장)은 모두 이들의 짧고 통통한 2등신 마스코트 몸에 맞게 귀엽게 데포르메하여 적용합니다.
+- 배경 및 그림자: 배경과 바닥은 완전히 깨끗한 단색 흰색(#FFFFFF)이어야 하며, 발밑에 타원형 회색 바닥 그림자나 어떠한 바닥 음영 표현도 그리지 말고 제거하십시오.`;
     const finalPrompt = `[System Instructions: ${systemInstructions}]\n\nUser Request: Generate the character performing the following scene: "${prompt}".`;
 
     if (usingGcpCreds) {

@@ -251,7 +251,7 @@ function loadApiCredentials() {
   // Method 2: Development Stage default preconfigured credentials
   let credentials = {
     apiType: 'studio',
-    studioKey: '',
+    studioKey: window.DEV_GEMINI_API_KEY || '',
     projectId: '914250995391',
     accessToken: '',
     remember: true,
@@ -338,108 +338,6 @@ async function getReferenceImageBase64(charKey) {
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Helper to remove white background from generated character illustrations using edge-seeded flood fill BFS
-async function makeImageTransparent(imgSrc) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-        const width = canvas.width;
-        const height = canvas.height;
-        
-        // Visited array for flood fill BFS
-        const visited = new Uint8Array(width * height);
-        const queue = [];
-        
-        // Helper to check if pixel is near-white (threshold 238 covers slight compression artifacts)
-        function isNearWhite(r, g, b) {
-          return r > 238 && g > 238 && b > 238;
-        }
-        
-        // Seed from borders
-        for (let x = 0; x < width; x++) {
-          let idx = x;
-          let dIdx = idx * 4;
-          if (isNearWhite(data[dIdx], data[dIdx + 1], data[dIdx + 2])) {
-            queue.push(idx);
-            visited[idx] = 1;
-          }
-          idx = (height - 1) * width + x;
-          dIdx = idx * 4;
-          if (isNearWhite(data[dIdx], data[dIdx + 1], data[dIdx + 2])) {
-            queue.push(idx);
-            visited[idx] = 1;
-          }
-        }
-        for (let y = 0; y < height; y++) {
-          let idx = y * width;
-          let dIdx = idx * 4;
-          if (isNearWhite(data[dIdx], data[dIdx + 1], data[dIdx + 2])) {
-            queue.push(idx);
-            visited[idx] = 1;
-          }
-          idx = y * width + (width - 1);
-          dIdx = idx * 4;
-          if (isNearWhite(data[dIdx], data[dIdx + 1], data[dIdx + 2])) {
-            queue.push(idx);
-            visited[idx] = 1;
-          }
-        }
-        
-        // BFS
-        let head = 0;
-        while (head < queue.length) {
-          const curr = queue[head++];
-          const cx = curr % width;
-          const cy = Math.floor(curr / width);
-          
-          const dIdx = curr * 4;
-          data[dIdx + 3] = 0; // Alpha = 0 (Transparent)
-          
-          const neighbors = [
-            [cx + 1, cy],
-            [cx - 1, cy],
-            [cx, cy + 1],
-            [cx, cy - 1]
-          ];
-          
-          for (const [nx, ny] of neighbors) {
-            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-              const nIdx = ny * width + nx;
-              if (!visited[nIdx]) {
-                const nDIdx = nIdx * 4;
-                if (isNearWhite(data[nDIdx], data[nDIdx + 1], data[nDIdx + 2])) {
-                  queue.push(nIdx);
-                  visited[nIdx] = 1;
-                }
-              }
-            }
-          }
-        }
-        
-        ctx.putImageData(imgData, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
-      } catch (err) {
-        console.warn('Transparency processing blocked by browser security (likely file:// protocol):', err);
-        resolve(imgSrc);
-      }
-    };
-    img.onerror = () => {
-      resolve(imgSrc);
-    };
-    img.src = imgSrc;
-  });
-}
-
 // Trigger Pipeline Generation Process
 async function triggerGeneration() {
   const promptText = els.promptInput.value;
@@ -462,9 +360,19 @@ async function triggerGeneration() {
     addDriftLog(`[Engine] Activating "Reference Character Mode" (공식 원본 참조 변형 방식).`, 'info');
     addDriftLog(`[Engine] Binding reference sheets as input nodes: "기본-달수.png", "기본-달희.png"`, 'info');
     
-    const systemInstructions = `첨부된 캐릭터를 그대로 유지한다. 얼굴 구조 변경 금지, 눈 모양 변경 금지, 신체 비율 변경 금지, 복장 변경 금지, 색상 변경 금지. 캐릭터 정체성을 유지하면서 포즈와 상황만 변경한다.
-배경은 아무것도 없는 투명 또는 흰색 단색 배경으로만 설정하고, 캐릭터 뒤에 도시, 자연, 사물 등의 어떠한 배경 환경이나 장면도 그리지 마십시오. (Absolutely no background. Render ONLY the character on a clean, solid white or transparent background. Do not draw any scenery, buildings, or environment behind the character.)
-이미지 내부에 어떠한 글자, 문자, 단어, 자막도 포함하지 마십시오. (Absolutely no text. Do not include any words, letters, subtitles, or labels inside the image.)`;
+    const systemInstructions = `[Style Guide: 2D flat vector cartoon character, bold black outlines, solid white background, no text]
+Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limbs and no neck.
+- Dalsu (달수): Always has fluffy, cloud-shaped dark brown hair (#604C3F) that surrounds his entire head, two simple black dot eyes, and a simple smiling mouth line.
+- Dalhee (달희): Always has mushroom-shaped dark brown hair (#604C3F) with bangs completely covering her forehead and eyes (no eyes or eyebrows visible), and a simple smiling mouth line.
+- Costume: If a specific outfit (e.g. suit, dress, uniform) is requested, draw it adapted to their chubby 2-head-tall chibi bodies (short sleeves, short pants, oversized tie, cute fit).
+- Background & Floor: The background and floor must be seamless solid white (#FFFFFF). Omit any ground shadows, foot shadows, or gray ellipses under their feet. The feet must stand on pure white ground with no shadow indicators.
+
+[한국어 캐릭터 가이드]
+달수와 달희는 팔다리가 짧고 목이 없는 2등신 SD 마스코트 캐릭터입니다.
+- 달수(Dalsu): 머리 전체를 포근하게 감싸는 갈색 구름 모양 머리, 검은색 점 눈 2개, 웃는 입선.
+- 달희(Dalhee): 이마와 눈을 완전히 덮은 갈색 버섯 모양 머리(눈이나 눈썹 노출 금지), 웃는 입선.
+- 의상: 요청된 의상(예: 정장)은 모두 이들의 짧고 통통한 2등신 마스코트 몸에 맞게 귀엽게 데포르메하여 적용합니다.
+- 배경 및 그림자: 배경과 바닥은 완전히 깨끗한 단색 흰색(#FFFFFF)이어야 하며, 발밑에 타원형 회색 바닥 그림자나 어떠한 바닥 음영 표현도 그리지 말고 제거하십시오.`;
     addDriftLog(`[System Prompt] Injecting: "${systemInstructions}"`, 'info');
     
     await sleep(400);
@@ -511,16 +419,24 @@ async function triggerGeneration() {
     // Fetch reference base64
     const refBase64 = await getReferenceImageBase64(appState.activeCharacter);
     
+    // Build style reinforcement strings based on active character to prevent model drift (purely positive, clean descriptions)
+    let styleReinforcement = "";
+    if (appState.activeCharacter === 'dalsu') {
+      styleReinforcement = "\n\n(Subject Details: Dalsu is a 2-head-tall chibi mascot with short chubby limbs. He has fluffy, cloud-shaped dark brown hair covering his entire head, two dot eyes, and a cute smiling mouth line. He is wearing the requested clothes adapted for his chibi body on a seamless solid white background with absolutely no ground shadows or ellipses under his feet.)";
+    } else if (appState.activeCharacter === 'dalhee') {
+      styleReinforcement = "\n\n(Subject Details: Dalhee is a 2-head-tall chibi mascot with short chubby limbs. She has mushroom-shaped dark brown hair with bangs that completely cover her forehead and eyes. She has a cute smiling mouth line. She is wearing the requested clothes adapted for her chibi body on a seamless solid white background with absolutely no ground shadows or ellipses under her feet.)";
+    } else if (appState.activeCharacter === 'both') {
+      styleReinforcement = "\n\n(Subject Details: Both Dalsu (left) and Dalhee (right) are 2-head-tall chibi mascot characters with short chubby limbs side-by-side. Dalsu has fluffy, cloud-shaped dark brown hair covering his head, two dot eyes, and a smiling mouth line. Dalhee has mushroom-shaped dark brown hair with bangs covering her forehead and eyes completely. They are both wearing the requested clothes adapted for their chibi bodies on a seamless solid white background with absolutely no ground shadows or ellipses under their feet.)";
+    }
+
     // Build full prompt including system instructions
-    const finalPrompt = `[System Instructions: ${systemInstructions}]\n\nUser Request: Generate the character performing the following scene: "${promptText}".`;
+    const finalPrompt = `[System Instructions: ${systemInstructions}]\n\nUser Request: Generate the character performing the following scene: "${promptText}".${styleReinforcement}`;
     
     if (appState.simulateMode) {
       // SIMULATED DEMO MODE
       // Match closest illustration to mock output
       const matchedAsset = matchOfficialDbAsset(promptText);
-      const rawImgSrc = 'example/' + matchedAsset.file;
-      const transparentImg = await makeImageTransparent(rawImgSrc);
-      appState.currentImgFile = transparentImg;
+      appState.currentImgFile = 'example/' + matchedAsset.file;
       
       // Log the exact simulated API request and response JSON payloads for inspector verification!
       const simulatedRequestPayload = {
@@ -573,7 +489,7 @@ async function triggerGeneration() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              prompt: promptText,
+              prompt: promptText + styleReinforcement, // Send reinforced prompt through proxy!
               refBase64: refBase64,
               apiType: apiType,
               projectId: projectId,
@@ -619,7 +535,7 @@ async function triggerGeneration() {
                     }
                   },
                   {
-                    text: finalPrompt
+                    text: finalPrompt // Sends finalPrompt containing styleReinforcement!
                   }
                 ]
               }
@@ -640,7 +556,7 @@ async function triggerGeneration() {
           requestBody = {
             instances: [
               {
-                prompt: finalPrompt,
+                prompt: finalPrompt, // Sends finalPrompt containing styleReinforcement!
                 image: { bytesBase64Encoded: refBase64 }
               }
             ],
@@ -680,9 +596,7 @@ async function triggerGeneration() {
       }
 
       if (outputB64) {
-        const rawImgSrc = 'data:image/png;base64,' + outputB64;
-        const transparentImg = await makeImageTransparent(rawImgSrc);
-        appState.currentImgFile = transparentImg;
+        appState.currentImgFile = 'data:image/png;base64,' + outputB64;
         const sourceName = useProxy ? 'Proxy Server' : (apiType === 'studio' ? 'AI Studio (Direct)' : 'Vertex AI (Direct)');
         addDriftLog(`[API Response] Image successfully synthesized and received via ${sourceName}.`, 'success');
         renderGeneratedOutput(`<img src="${appState.currentImgFile}" alt="Generated Character Output" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.35));" />`, `IMAGEN_OUTPUT`);

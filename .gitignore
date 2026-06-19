@@ -1,6 +1,7 @@
 # Local environment variables
 .env
 .env.local
+key.js
 
 # Dependency directories
 node_modules/
