@@ -137,7 +137,10 @@ const els = {
   apiVertexFields: null,
   apiProjectId: null,
   apiAccessToken: null,
-  apiRememberCheck: null
+  apiRememberCheck: null,
+  canvasLoadingOverlay: null,
+  loaderStatusText: null,
+  loaderStepInfo: null
 };
 
 // Initialize App
@@ -165,6 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
   els.apiProjectId = document.getElementById('apiProjectId');
   els.apiAccessToken = document.getElementById('apiAccessToken');
   els.apiRememberCheck = document.getElementById('apiRememberCheck');
+  els.canvasLoadingOverlay = document.getElementById('canvasLoadingOverlay');
+  els.loaderStatusText = document.getElementById('loaderStatusText');
+  els.loaderStepInfo = document.getElementById('loaderStepInfo');
 
   // Load configuration and history
   loadHistory();
@@ -349,6 +355,20 @@ async function triggerGeneration() {
   els.btnGenerate.disabled = true;
   els.btnGenerate.textContent = '생성 중...';
   els.canvasContainer.classList.add('loading');
+  
+  if (els.canvasLoadingOverlay) {
+    els.canvasLoadingOverlay.classList.add('active');
+    const loaderAvatarImg = document.getElementById('loaderAvatarImg');
+    if (loaderAvatarImg) {
+      if (appState.activeCharacter === 'dalhee') {
+        loaderAvatarImg.src = 'example/기본-달희.png';
+      } else if (appState.activeCharacter === 'both') {
+        loaderAvatarImg.src = 'example/응용-A-인사1.png';
+      } else {
+        loaderAvatarImg.src = 'example/기본-달수.png';
+      }
+    }
+  }
   
   resetPipelineNodes();
   
@@ -628,6 +648,9 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
 function renderGeneratedOutput(html, nameBase) {
   els.canvasContainer.innerHTML = html;
   els.canvasContainer.classList.remove('loading');
+  if (els.canvasLoadingOverlay) {
+    els.canvasLoadingOverlay.classList.remove('active');
+  }
   
   appState.generationCount++;
   const finalAssetName = `${nameBase}_${appState.generationCount}`;
@@ -672,6 +695,9 @@ function resetBtnAndCanvas() {
     캐릭터 생성하기
   `;
   els.canvasContainer.classList.remove('loading');
+  if (els.canvasLoadingOverlay) {
+    els.canvasLoadingOverlay.classList.remove('active');
+  }
 }
 
 // Stubs and matching fallbacks for Simulation Mode
@@ -799,6 +825,12 @@ function updatePipelineStep(stepIndex, statusClass, statusText) {
   if (statusText) {
     els.pipelineStatusMsg.textContent = statusText;
     els.pipelineStatusMsg.style.color = statusClass === 'active' ? 'var(--color-primary)' : 'var(--color-accent)';
+    if (els.loaderStatusText) {
+      els.loaderStatusText.textContent = statusText;
+    }
+    if (els.loaderStepInfo) {
+      els.loaderStepInfo.textContent = `${stepIndex}단계 진행 중`;
+    }
   }
 }
 
