@@ -313,22 +313,14 @@ function initSelectListeners() {
   });
 }
 
-// Helper to convert local reference image file to base64 for API payload
-async function getReferenceImageBase64(charKey) {
-  let filepath = 'example/기본-달수.png';
-  if (charKey === 'dalhee') {
-    filepath = 'example/기본-달희.png';
-  } else if (charKey === 'both') {
-    filepath = 'example/응용-A-인사1.png'; // default combined starting reference
-  }
-  
+// Helper to convert a single local reference image file to base64
+async function fileToBase64(filepath) {
   try {
     const response = await fetch(filepath);
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        // Strip data:image/png;base64, prefix
         const base64String = reader.result.split(',')[1];
         resolve(base64String);
       };
@@ -336,9 +328,25 @@ async function getReferenceImageBase64(charKey) {
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    console.error('Error reading reference file:', error);
-    // Fallback simple base64 mock to prevent crash if file is missing in sandbox
+    console.error('Error reading reference file:', filepath, error);
     return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  }
+}
+
+// Returns an array of base64 reference images for the selected character
+// For "both" mode, sends individual character sheets so the model can learn each character's identity separately
+async function getReferenceImagesBase64(charKey) {
+  if (charKey === 'dalhee') {
+    return [await fileToBase64('example/기본-달희.png')];
+  } else if (charKey === 'both') {
+    // 방안 2: 개별 캐릭터 원본 2장을 보내 모델이 각 캐릭터 특징을 교차 검증
+    const [dalsuRef, dalheeRef] = await Promise.all([
+      fileToBase64('example/기본-달수.png'),
+      fileToBase64('example/기본-달희.png')
+    ]);
+    return [dalsuRef, dalheeRef];
+  } else {
+    return [await fileToBase64('example/기본-달수.png')];
   }
 }
 
@@ -384,14 +392,14 @@ async function triggerGeneration() {
 Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limbs and no neck.
 - Dalsu (달수): Always has fluffy, cloud-shaped dark brown hair (#604C3F) that surrounds his entire head, two simple black dot eyes, and a simple smiling mouth line.
 - Dalhee (달희): Always has mushroom-shaped dark brown hair (#604C3F) with bangs completely covering her forehead and eyes (no eyes or eyebrows visible), and a simple smiling mouth line.
-- Costume: If a specific outfit (e.g. suit, dress, uniform) is requested, draw it adapted to their chubby 2-head-tall chibi bodies (short sleeves, short pants, oversized tie, cute fit).
+- Costume Policy: Keep the character's original default outfit from the reference image. Do NOT change their clothes unless the user EXPLICITLY requests a specific costume (e.g. "한복 입은", "정장 차림의"). Activities like "축구하는", "시험치는", "요리하는" do NOT require costume changes - draw the characters in their default outfit while performing the activity.
 - Background & Floor: The background and floor must be seamless solid white (#FFFFFF). Omit any ground shadows, foot shadows, or gray ellipses under their feet. The feet must stand on pure white ground with no shadow indicators.
 
 [한국어 캐릭터 가이드]
 달수와 달희는 팔다리가 짧고 목이 없는 2등신 SD 마스코트 캐릭터입니다.
 - 달수(Dalsu): 머리 전체를 포근하게 감싸는 갈색 구름 모양 머리, 검은색 점 눈 2개, 웃는 입선.
 - 달희(Dalhee): 이마와 눈을 완전히 덮은 갈색 버섯 모양 머리(눈이나 눈썹 노출 금지), 웃는 입선.
-- 의상: 요청된 의상(예: 정장)은 모두 이들의 짧고 통통한 2등신 마스코트 몸에 맞게 귀엽게 데포르메하여 적용합니다.
+- 의상 정책: 레퍼런스 이미지의 기본 의상을 그대로 유지하십시오. 사용자가 "한복 입은", "정장 차림의"처럼 명시적으로 의상 변경을 요청한 경우에만 의상을 변경하십시오. "축구하는", "시험치는" 등의 활동 요청은 의상 변경이 아니라 포즈 변경입니다.
 - 배경 및 그림자: 배경과 바닥은 완전히 깨끗한 단색 흰색(#FFFFFF)이어야 하며, 발밑에 타원형 회색 바닥 그림자나 어떠한 바닥 음영 표현도 그리지 말고 제거하십시오.`;
     addDriftLog(`[System Prompt] Injecting: "${systemInstructions}"`, 'info');
     
@@ -437,16 +445,18 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
     els.pipelineProgress.style.width = '100%';
     
     // Fetch reference base64
-    const refBase64 = await getReferenceImageBase64(appState.activeCharacter);
+    // 방안 2: 레퍼런스 이미지를 배열로 가져옴 (both 모드에서 달수+달희 개별 원본 2장)
+    const refImages = await getReferenceImagesBase64(appState.activeCharacter);
+    const refBase64 = refImages[0]; // 시뮬레이션 모드 및 하위 호환용
     
-    // Build style reinforcement strings based on active character to prevent model drift (purely positive, clean descriptions)
+    // 방안 1: 의상 변경 유도 문구 제거 → 원본 외형 유지 + 포즈만 변경 지시
     let styleReinforcement = "";
     if (appState.activeCharacter === 'dalsu') {
-      styleReinforcement = "\n\n(Subject Details: Dalsu is a 2-head-tall chibi mascot with short chubby limbs. He has fluffy, cloud-shaped dark brown hair covering his entire head, two dot eyes, and a cute smiling mouth line. He is wearing the requested clothes adapted for his chibi body on a seamless solid white background with absolutely no ground shadows or ellipses under his feet.)";
+      styleReinforcement = "\n\n(Subject Details: Dalsu is a 2-head-tall chibi mascot with short chubby limbs. He has fluffy, cloud-shaped dark brown hair covering his entire head, two dot eyes, and a cute smiling mouth line. Keep his original outfit and appearance exactly as shown in the reference image. Only change his pose to match the requested scene. Do NOT redesign his clothes, hair, face, or body proportions. Seamless solid white background with absolutely no ground shadows or ellipses under his feet.)";
     } else if (appState.activeCharacter === 'dalhee') {
-      styleReinforcement = "\n\n(Subject Details: Dalhee is a 2-head-tall chibi mascot with short chubby limbs. She has mushroom-shaped dark brown hair with bangs that completely cover her forehead and eyes. She has a cute smiling mouth line. She is wearing the requested clothes adapted for her chibi body on a seamless solid white background with absolutely no ground shadows or ellipses under her feet.)";
+      styleReinforcement = "\n\n(Subject Details: Dalhee is a 2-head-tall chibi mascot with short chubby limbs. She has mushroom-shaped dark brown hair with bangs that completely cover her forehead and eyes. She has a cute smiling mouth line. Keep her original outfit and appearance exactly as shown in the reference image. Only change her pose to match the requested scene. Do NOT redesign her clothes, hair, face, or body proportions. Seamless solid white background with absolutely no ground shadows or ellipses under her feet.)";
     } else if (appState.activeCharacter === 'both') {
-      styleReinforcement = "\n\n(Subject Details: Both Dalsu (left) and Dalhee (right) are 2-head-tall chibi mascot characters with short chubby limbs side-by-side. Dalsu has fluffy, cloud-shaped dark brown hair covering his head, two dot eyes, and a smiling mouth line. Dalhee has mushroom-shaped dark brown hair with bangs covering her forehead and eyes completely. They are both wearing the requested clothes adapted for their chibi bodies on a seamless solid white background with absolutely no ground shadows or ellipses under their feet.)";
+      styleReinforcement = "\n\n(Subject Details: Both Dalsu (left) and Dalhee (right) are 2-head-tall chibi mascot characters with short chubby limbs side-by-side. Dalsu has fluffy, cloud-shaped dark brown hair covering his head, two dot eyes, and a smiling mouth line. Dalhee has mushroom-shaped dark brown hair with bangs covering her forehead and eyes completely. Keep both characters' original outfits and appearances exactly as shown in the reference images. Only change their poses to match the requested scene. Do NOT redesign their clothes, hair, faces, or body proportions. Seamless solid white background with absolutely no ground shadows or ellipses under their feet.)";
     }
 
     // Build full prompt including system instructions
@@ -505,12 +515,13 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
       if (useProxy) {
         addDriftLog(`[API Request] Dispatching predict call through local Proxy Server...`, 'info');
         try {
+          // 방안 3: 클라이언트가 완성된 finalPrompt를 전송, 서버는 중계만
           const res = await fetch('/api/generate-image', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              prompt: promptText + styleReinforcement, // Send reinforced prompt through proxy!
-              refBase64: refBase64,
+              prompt: finalPrompt, // 완성된 프롬프트 전송 (이중 구성 방지)
+              refImages: refImages, // 방안 2: 레퍼런스 이미지 배열 전송
               apiType: apiType,
               projectId: projectId,
               token: token
@@ -553,22 +564,14 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
           }
           addDriftLog(`[API Request] Dispatching direct call to Google AI Studio (gemini-2.5-flash-image)...`, 'info');
           url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${studioKey}`;
+          // 방안 2: 모든 레퍼런스 이미지를 parts에 추가
+          const parts = [];
+          for (const img of refImages) {
+            parts.push({ inlineData: { mimeType: "image/png", data: img } });
+          }
+          parts.push({ text: finalPrompt });
           requestBody = {
-            contents: [
-              {
-                parts: [
-                  {
-                    inlineData: {
-                      mimeType: "image/png",
-                      data: refBase64
-                    }
-                  },
-                  {
-                    text: finalPrompt // Sends finalPrompt containing styleReinforcement!
-                  }
-                ]
-              }
-            ],
+            contents: [{ parts }],
             generationConfig: {
               responseModalities: ["IMAGE"]
             }

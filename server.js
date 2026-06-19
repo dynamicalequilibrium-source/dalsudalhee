@@ -44,7 +44,11 @@ async function getVertexToken() {
 // Proxy Endpoint to Google AI Studio/Vertex AI
 app.post('/api/generate-image', async (req, res) => {
   try {
-    const { prompt, refBase64, apiType, projectId, token } = req.body;
+    // 방안 3: 클라이언트가 보낸 완성된 프롬프트를 그대로 사용 (이중 시스템 프롬프트 제거)
+    // 방안 2: refImages 배열 지원 (하위 호환: refBase64도 지원)
+    const { prompt, apiType, projectId, token } = req.body;
+    const refImages = req.body.refImages || (req.body.refBase64 ? [req.body.refBase64] : []);
+    const refBase64 = refImages[0] || '';
     
     let url = '';
     let headers = {
@@ -67,20 +71,8 @@ app.post('/api/generate-image', async (req, res) => {
       }
     }
 
-    const systemInstructions = `[Style Guide: 2D flat vector cartoon character, bold black outlines, solid white background, no text]
-Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limbs and no neck.
-- Dalsu (달수): Always has fluffy, cloud-shaped dark brown hair (#604C3F) that surrounds his entire head, two simple black dot eyes, and a simple smiling mouth line.
-- Dalhee (달희): Always has mushroom-shaped dark brown hair (#604C3F) with bangs completely covering her forehead and eyes (no eyes or eyebrows visible), and a simple smiling mouth line.
-- Costume: If a specific outfit (e.g. suit, dress, uniform) is requested, draw it adapted to their chubby 2-head-tall chibi bodies (short sleeves, short pants, oversized tie, cute fit).
-- Background & Floor: The background and floor must be seamless solid white (#FFFFFF). Omit any ground shadows, foot shadows, or gray ellipses under their feet. The feet must stand on pure white ground with no shadow indicators.
-
-[한국어 캐릭터 가이드]
-달수와 달희는 팔다리가 짧고 목이 없는 2등신 SD 마스코트 캐릭터입니다.
-- 달수(Dalsu): 머리 전체를 포근하게 감싸는 갈색 구름 모양 머리, 검은색 점 눈 2개, 웃는 입선.
-- 달희(Dalhee): 이마와 눈을 완전히 덮은 갈색 버섯 모양 머리(눈이나 눈썹 노출 금지), 웃는 입선.
-- 의상: 요청된 의상(예: 정장)은 모두 이들의 짧고 통통한 2등신 마스코트 몸에 맞게 귀엽게 데포르메하여 적용합니다.
-- 배경 및 그림자: 배경과 바닥은 완전히 깨끗한 단색 흰색(#FFFFFF)이어야 하며, 발밑에 타원형 회색 바닥 그림자나 어떠한 바닥 음영 표현도 그리지 말고 제거하십시오.`;
-    const finalPrompt = `[System Instructions: ${systemInstructions}]\n\nUser Request: Generate the character performing the following scene: "${prompt}".`;
+    // 프롬프트는 클라이언트가 이미 완성하여 보냈으므로 그대로 사용
+    const finalPrompt = prompt;
 
     if (usingGcpCreds) {
       // Vertex AI request body structure
@@ -131,22 +123,14 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
         }
         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
         isGeminiCall = true;
+        // 방안 2: 모든 레퍼런스 이미지를 parts에 추가
+        const parts = [];
+        for (const img of refImages) {
+          parts.push({ inlineData: { mimeType: "image/png", data: img } });
+        }
+        parts.push({ text: finalPrompt });
         requestBody = {
-          contents: [
-            {
-              parts: [
-                {
-                  inlineData: {
-                    mimeType: "image/png",
-                    data: refBase64
-                  }
-                },
-                {
-                  text: finalPrompt
-                }
-              ]
-            }
-          ],
+          contents: [{ parts }],
           generationConfig: {
             responseModalities: ["IMAGE"]
           }
