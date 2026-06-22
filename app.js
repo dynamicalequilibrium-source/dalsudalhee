@@ -19,6 +19,10 @@ let officialDbAssets = [
   // Base Poses
   { file: '기본-달수.png', char: 'dalsu', action: 'default', keywords: ['기본', '서있', '포즈', '평범', '스탠딩'] },
   { file: '기본-달희.png', char: 'dalhee', action: 'default', keywords: ['기본', '서있', '포즈', '평범', '스탠딩'] },
+  { file: '기본-수달.png', char: 'sudal', action: 'default', keywords: ['기본', '서있', '포즈', '평범', '스탠딩'] },
+  { file: '응용-V-어린이보호구역-수달.png', char: 'sudal', action: 'working', keywords: ['어린이', '보호구역', '스쿨존', '안전', '신호', '횡단보도', '30km', '지키', '안전제일'] },
+  { file: '응용-Q-마라톤-수달.png', char: 'sudal', action: 'exercising', keywords: ['마라톤', '달리기', '러닝', '운동', '체육', '달리는', '뛰어가는', '뛰는', '완주', '골인', '조깅'] },
+  { file: '응용-J-주차금지-수달.png', char: 'sudal', action: 'working', keywords: ['주차', '주차금지', '차량', '교통', '금지', '단속', '경찰봉', '주차단속', '라바콘'] },
 
   // A - Greeting 1
   { file: '응용-A-인사1-달수.png', char: 'dalsu', action: 'guiding', keywords: ['인사', '안녕', '반갑', '안녕하세요', '맞이', '인사하는', '손흔드는'] },
@@ -338,6 +342,8 @@ async function fileToBase64(filepath) {
 async function getReferenceImagesBase64(charKey) {
   if (charKey === 'dalhee') {
     return [await fileToBase64('example/기본-달희.png')];
+  } else if (charKey === 'sudal') {
+    return [await fileToBase64('example/기본-수달.png')];
   } else if (charKey === 'both') {
     // 방안 2: 개별 캐릭터 원본 2장을 보내 모델이 각 캐릭터 특징을 교차 검증
     const [dalsuRef, dalheeRef] = await Promise.all([
@@ -370,6 +376,8 @@ async function triggerGeneration() {
     if (loaderAvatarImg) {
       if (appState.activeCharacter === 'dalhee') {
         loaderAvatarImg.src = 'example/기본-달희.png';
+      } else if (appState.activeCharacter === 'sudal') {
+        loaderAvatarImg.src = 'example/기본-수달.png';
       } else if (appState.activeCharacter === 'both') {
         loaderAvatarImg.src = 'example/응용-A-인사1.png';
       } else {
@@ -482,6 +490,8 @@ Dalhee's hair is her MOST recognizable feature. It MUST flare out widely to both
       styleReinforcement = "\n\n[COMPOSITION] Zoomed-out full body shot. The character must be small and centered in frame, occupying at most 65% of the image height. Leave large empty white margins on all four sides. The top of the hair and the bottom of the feet must be fully visible with plenty of space above and below. Do NOT zoom in or crop.\n\n(Subject Details: Dalsu is a 2-head-tall chibi mascot with short chubby limbs. He has fluffy, cloud-shaped dark brown hair covering his entire head, two dot eyes, and a cute smiling mouth line. Keep his original outfit and appearance exactly as shown in the reference image. Only change his pose. Seamless solid white background, no shadows.)";
     } else if (appState.activeCharacter === 'dalhee') {
       styleReinforcement = "\n\n[COMPOSITION] Zoomed-out full body shot. The character must be small and centered in frame, occupying at most 65% of the image height. Leave large empty white margins on all four sides. The top of the hair and the bottom of the feet must be fully visible with plenty of space above and below. Do NOT zoom in or crop.\n\n(Subject Details: Dalhee is a 2-head-tall chibi mascot with short chubby limbs. HAIR SHAPE: She has a wide flared-out bob hairstyle - her dark brown hair flares out dramatically to BOTH SIDES wider than her body like wings, and the hair tips FLIP OUTWARD at the ends. The top is round/flat and it widens as it goes down. The overall silhouette looks like an upside-down trapezoid or wide bell. DO NOT draw straight-hanging, narrow, ponytail, or any other hairstyle. FACE: DO NOT DRAW EYES ON DALHEE. Her thick straight bangs cover her entire upper face down to her nose. Only her nose tip and a small smiling mouth are visible. ZERO eyes visible. Keep her original outfit and appearance exactly as shown in the reference image. Only change her pose. Seamless solid white background, no shadows.)";
+    } else if (appState.activeCharacter === 'sudal') {
+      styleReinforcement = "\n\n[COMPOSITION] Zoomed-out full body shot. The character must be small and centered in frame, occupying at most 65% of the image height. Leave large empty white margins on all four sides. The top of the cap and the bottom of the feet must be fully visible with plenty of space above and below. Do NOT zoom in or crop.\n\n(Subject Details: Sudal is a 2-head-tall chibi mascot otter character with a light brownish-gray body and short chubby limbs. HEAD & FACE: He has a round head, two small ears on top, and a swirly/curly dark brown lock of hair on the center of his forehead. He has two small black dot eyes, four short horizontal whiskers on his cheeks (two on each side), a white snout area with a black nose, and a smiling wavy w-shaped mouth line. ACCESSORIES: He wears a yellow cap turned backwards on his head, and a yellow backpack. BELLY: He has a white crescent moon shape on the left side of his chest/belly. TAIL: He has a thick otter tail extending from his back. Keep his original outfit and appearance exactly as shown in the reference image. Only change his pose. Seamless solid white background, no shadows.)";
     } else if (appState.activeCharacter === 'both') {
       styleReinforcement = "\n\n[COMPOSITION] Zoomed-out full body shot. Both characters must be small and centered in frame, occupying at most 65% of the image height. Leave large empty white margins on all four sides. Tops of heads and bottoms of feet must be fully visible with plenty of space. Do NOT zoom in or crop.\n\n(Subject Details: Two characters side by side. LEFT = Dalsu (boy): cloud-shaped dark brown hair, two BLACK DOT EYES visible, smiling mouth. RIGHT = Dalhee (girl): wide flared-out bob hairstyle - dark brown hair flares out dramatically to BOTH SIDES wider than her body like wings, hair tips FLIP OUTWARD, overall silhouette like an upside-down trapezoid. Thick straight bangs cover her entire upper face. CRITICAL DIFFERENCE: Dalsu HAS eyes. Dalhee has NO EYES - bangs cover upper face completely. DO NOT draw narrow/straight hair or eyes on Dalhee. Keep both characters' original outfits. Only change their poses. Seamless solid white background, no shadows.)";
     }
@@ -777,6 +787,7 @@ function resetBtnAndCanvas() {
 function getCharacterDisplayName(charKey) {
   if (charKey === 'dalsu') return '달수';
   if (charKey === 'dalhee') return '달희';
+  if (charKey === 'sudal') return '수달';
   if (charKey === 'both') return '달수와 달희';
   return 'Character';
 }
@@ -873,6 +884,8 @@ function matchOfficialDbAsset(promptText) {
       bestAsset = officialDbAssets.find(a => a.file === '기본-달수.png');
     } else if (targetChar === 'dalhee') {
       bestAsset = officialDbAssets.find(a => a.file === '기본-달희.png');
+    } else if (targetChar === 'sudal') {
+      bestAsset = officialDbAssets.find(a => a.file === '기본-수달.png');
     } else {
       bestAsset = officialDbAssets.find(a => a.file === '응용-A-인사1.png');
     }
