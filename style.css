@@ -141,6 +141,38 @@ header {
   }
 }
 
+@media (max-width: 768px) {
+  body {
+    height: auto;
+    overflow-y: auto;
+  }
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+  .config-panel, .workspace-panel, .history-sidebar {
+    width: 100%;
+    min-height: auto;
+    overflow: visible;
+  }
+  .config-fields.scrollable, .history-list.scrollable {
+    overflow-y: visible;
+  }
+  .history-sidebar {
+    display: flex !important;
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+  .config-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .workspace-panel {
+    min-height: 60vh;
+  }
+}
+
 /* Scrollbar styles */
 ::-webkit-scrollbar {
   width: 6px;
@@ -305,7 +337,7 @@ textarea.prompt-input {
 }
 
 textarea.prompt-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: #FFFFFF;
 }
 
 textarea.prompt-input:focus {
