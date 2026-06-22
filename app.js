@@ -391,7 +391,18 @@ async function triggerGeneration() {
     const systemInstructions = `[Style Guide: 2D flat vector cartoon character, bold black outlines, solid white background, no text]
 Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limbs and no neck.
 - Dalsu (달수): Always has fluffy, cloud-shaped dark brown hair (#604C3F) that surrounds his entire head, two simple black dot eyes, and a simple smiling mouth line.
-- Dalhee (달희): Always has mushroom-shaped dark brown hair (#604C3F) with very thick, heavy bangs. Her hair hangs down to her nose level, forming a solid wall of hair over her entire upper face. NO EYES, NO EYEBROWS, NO FOREHEAD visible. The ONLY facial features visible are: the tip of her nose and a simple smiling mouth line. Think of her face as: hair hair hair hair (nose) (mouth) chin.
+- Dalhee (달희): Has a very distinctive wide flared-out bob hairstyle in dark brown (#604C3F). Her hair MUST match this exact silhouette:
+  * The hair is voluminous and flares out dramatically to BOTH SIDES, extending wider than her body/shoulders, like wings or flippers.
+  * The hair tips/ends curl and FLIP OUTWARD at the sides, not inward.
+  * The top of the hair is relatively flat/round, then it widens and flares out as it goes down.
+  * The overall shape is like an upside-down trapezoid or a wide bell shape.
+  * She has very thick, heavy straight bangs/fringe covering her ENTIRE upper face down to her nose bridge.
+  * NO EYES, NO EYEBROWS, NO FOREHEAD visible through the bangs. Only her nose tip and a simple smiling mouth line are visible.
+  * The hair reaches approximately to her shoulder level at the sides.
+  * DO NOT draw her with straight-hanging hair, pigtails, ponytail, long flowing hair, or any other hairstyle. It MUST be a wide flared-out bob with flipped-out tips.
+
+[CRITICAL RULE - DALHEE'S HAIR SHAPE]
+Dalhee's hair is her MOST recognizable feature. It MUST flare out widely to both sides like wings. The ends flip outward. If you draw straight-hanging or narrow hair, you are drawing the WRONG character.
 
 [CRITICAL RULE - DALHEE'S EYES]
 !!! Dalhee DOES NOT HAVE VISIBLE EYES. This is NOT optional. !!!
@@ -408,7 +419,10 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
 [한국어 캐릭터 가이드]
 달수와 달희는 팔다리가 짧고 목이 없는 2등신 SD 마스코트 캐릭터입니다.
 - 달수(Dalsu): 머리 전체를 포근하게 감싸는 갈색 구름 모양 머리, 검은색 점 눈 2개, 웃는 입선.
-- 달희(Dalhee): 두꺿고 무거운 버섯형 갈색 머리카락이 코까지 내려와 얼굴 윗부분을 완전히 가립니다. 눈을 절대 그리지 마십시오! 코와 입만 보여야 합니다.
+- 달희(Dalhee): 양옆으로 크게 펼쳐지는 와이드 플레어 보브컷. 머리끝이 바깥으로 뒤집히며(flip-out), 전체 실루엣이 날개처럼 몸보다 넓게 펼쳐집니다. 두꺼운 앞머리가 이마~코까지 내려와 눈을 완전히 가립니다. 코끝과 웃는 입만 보입니다.
+
+[달희 머리 모양 규칙 - 최우선]
+달희의 머리는 반드시 양옆으로 넓게 펼쳐지고 끝이 바깥으로 뒤집히는 와이드 보브컷이어야 합니다. 일자로 내려오거나 좁은 머리, 포니테일 등 다른 스타일로 그리지 마십시오.
 
 [달희 눈 금지 규칙 - 최우선]
 !!! 달희는 눈이 보이지 않는 캐릭터입니다 !!!
@@ -467,9 +481,9 @@ Dalsu and Dalhee are 2-head-tall chibi mascot characters with short, chubby limb
     if (appState.activeCharacter === 'dalsu') {
       styleReinforcement = "\n\n(Subject Details: Dalsu is a 2-head-tall chibi mascot with short chubby limbs. He has fluffy, cloud-shaped dark brown hair covering his entire head, two dot eyes, and a cute smiling mouth line. Keep his original outfit and appearance exactly as shown in the reference image. Only change his pose to match the requested scene. Do NOT redesign his clothes, hair, face, or body proportions. IMPORTANT: Draw full body with generous white margins on all sides. Do NOT crop the top of his head or any body part. Seamless solid white background.)";
     } else if (appState.activeCharacter === 'dalhee') {
-      styleReinforcement = "\n\n(Subject Details: Dalhee is a 2-head-tall chibi mascot with short chubby limbs. CRITICAL: DO NOT DRAW EYES ON DALHEE. Her thick mushroom-shaped dark brown bangs hang down to her nose, creating a solid wall of hair over her upper face. The only visible facial features are the tip of her nose and a small smiling mouth. There are ZERO eyes visible - no dots, no circles, no eye shapes whatsoever. Her face from the side looks like: [hair covering everything] then [nose] then [mouth] then [chin]. Keep her original outfit and appearance exactly as shown in the reference image. Only change her pose. IMPORTANT: Draw full body with generous white margins on all sides. Do NOT crop any body part. Seamless solid white background.)";
+      styleReinforcement = "\n\n(Subject Details: Dalhee is a 2-head-tall chibi mascot with short chubby limbs. HAIR SHAPE: She has a wide flared-out bob hairstyle - her dark brown hair flares out dramatically to BOTH SIDES wider than her body like wings, and the hair tips FLIP OUTWARD at the ends. The top is round/flat and it widens as it goes down. DO NOT draw straight-hanging, narrow, or ponytail hair. FACE: DO NOT DRAW EYES ON DALHEE. Her thick straight bangs cover her entire upper face down to her nose. Only her nose tip and a small smiling mouth are visible. ZERO eyes visible. Keep her original outfit and appearance exactly as shown in the reference image. Only change her pose. IMPORTANT: Draw full body with generous white margins on all sides. Do NOT crop any body part. Seamless solid white background.)";
     } else if (appState.activeCharacter === 'both') {
-      styleReinforcement = "\n\n(Subject Details: Two characters side by side. LEFT = Dalsu (boy): cloud-shaped dark brown hair, two BLACK DOT EYES visible, smiling mouth. RIGHT = Dalhee (girl): mushroom-shaped dark brown hair with very thick bangs hanging down to her nose. CRITICAL DIFFERENCE: Dalsu HAS eyes (two dots). Dalhee has NO EYES - her bangs form a solid wall covering her entire upper face. On Dalhee, you should only see: hair, nose tip, mouth, chin. DO NOT draw any eye shapes on the female character. Keep both characters' original outfits and appearances exactly as shown in the reference images. Only change their poses. IMPORTANT: Draw full bodies with generous white margins on all sides. Do NOT crop any body parts. Seamless solid white background.)";
+      styleReinforcement = "\n\n(Subject Details: Two characters side by side. LEFT = Dalsu (boy): cloud-shaped dark brown hair, two BLACK DOT EYES visible, smiling mouth. RIGHT = Dalhee (girl): wide flared-out bob hairstyle - dark brown hair flares out dramatically to BOTH SIDES wider than her body like wings, hair tips FLIP OUTWARD. Thick straight bangs cover her entire upper face. CRITICAL DIFFERENCE: Dalsu HAS eyes (two dots). Dalhee has NO EYES - bangs cover her upper face completely. On Dalhee, only see: flared wing-like hair, nose tip, mouth, chin. DO NOT draw narrow/straight hair or eyes on the female character. Keep both characters' original outfits. Only change their poses. IMPORTANT: Draw full bodies with generous white margins. Seamless solid white background.)";
     }
 
     // Build full prompt including system instructions
