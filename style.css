@@ -218,7 +218,7 @@ header {
 .form-label {
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #FFFFFF;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   display: flex;
@@ -302,6 +302,10 @@ textarea.prompt-input {
   font-size: 0.9rem;
   resize: none;
   transition: border-color 0.2s ease;
+}
+
+textarea.prompt-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 textarea.prompt-input:focus {
