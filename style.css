@@ -39,8 +39,9 @@ body {
   background-color: var(--bg-base);
   color: var(--text-main);
   font-family: var(--font-body);
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -127,7 +128,7 @@ header {
   display: grid;
   grid-template-columns: 320px 1fr 420px;
   flex: 1;
-  height: calc(100vh - 70px);
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -249,6 +250,11 @@ header {
   flex-direction: column;
   align-items: center;
   gap: 0.4rem;
+}
+
+.char-btn span {
+  text-align: center;
+  line-height: 1.25;
 }
 
 .char-btn:hover {
