@@ -167,7 +167,33 @@ header {
   background: rgba(15, 21, 35, 0.4);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.config-header {
+  padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+}
+
+.config-fields.scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 1.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.config-actions {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  background: rgba(11, 15, 25, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+.config-actions .btn-generate {
+  margin-top: 0;
+  width: 100%;
 }
 
 .panel-title {
@@ -383,6 +409,7 @@ select.studio-select:focus {
   display: flex;
   flex-direction: column;
   background-color: #0E1321;
+  min-height: 0;
 }
 
 .workspace-header {
@@ -721,6 +748,8 @@ select.studio-select:focus {
   background: rgba(15, 21, 35, 0.4);
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .history-header {

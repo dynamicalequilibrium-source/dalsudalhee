@@ -988,6 +988,26 @@ async function loadHistory() {
     renderHistoryList();
   }
 }
+function getDisplayPrompt(rawPrompt) {
+  if (!rawPrompt) return '제목 없음';
+  
+  // 1. Try to extract from "User Request: Generate the character performing the following scene: "..."
+  const sceneMatch = rawPrompt.match(/User Request: Generate the character performing the following scene: "([^"]+)"/i);
+  if (sceneMatch && sceneMatch[1]) {
+    return sceneMatch[1];
+  }
+  
+  // 2. If it's a long prompt containing System Instructions but doesn't have the exact text, check for quotes
+  if (rawPrompt.length > 100 && (rawPrompt.includes('User Request:') || rawPrompt.includes('System Instructions:'))) {
+    const quoteIndex = rawPrompt.indexOf('"');
+    const lastQuoteIndex = rawPrompt.lastIndexOf('"');
+    if (quoteIndex !== -1 && lastQuoteIndex !== -1 && quoteIndex < lastQuoteIndex) {
+      return rawPrompt.substring(quoteIndex + 1, lastQuoteIndex);
+    }
+  }
+  
+  return rawPrompt;
+}
 
 function renderHistoryList() {
   if (!appState.history || appState.history.length === 0) {
@@ -1012,7 +1032,7 @@ function renderHistoryList() {
           ${previewContent}
         </div>
         <div class="history-details">
-          <div class="history-prompt">${item.prompt}</div>
+          <div class="history-prompt">${getDisplayPrompt(item.prompt)}</div>
           <div class="history-meta">
             <span>${charName}</span>
             <span>${item.timestamp}</span>
@@ -1035,6 +1055,7 @@ function loadHistoryItem(id) {
   appState.currentImgFile = item.imgFile;
   
   els.actionSelect.value = item.action;
+  els.promptInput.value = getDisplayPrompt(item.prompt);
   
   const buttons = document.querySelectorAll('.config-panel .character-select-grid .char-btn');
   buttons.forEach(btn => {
