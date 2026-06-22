@@ -142,34 +142,93 @@ header {
 }
 
 @media (max-width: 768px) {
-  body {
-    height: auto;
-    overflow-y: auto;
+  html, body {
+    height: auto !important;
+    max-height: none !important;
+    overflow: auto !important;
+    overflow-y: auto !important;
   }
+
   .app-container {
     display: flex;
     flex-direction: column;
-    overflow: visible;
+    height: auto !important;
+    max-height: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
   }
-  .config-panel, .workspace-panel, .history-sidebar {
-    width: 100%;
-    min-height: auto;
-    overflow: visible;
-  }
-  .config-fields.scrollable, .history-list.scrollable {
-    overflow-y: visible;
-  }
-  .history-sidebar {
-    display: flex !important;
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-  }
+
+  /* Config Panel */
   .config-panel {
-    border-right: none;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    border-right: none !important;
     border-bottom: 1px solid var(--border-color);
   }
+
+  .config-fields.scrollable {
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+    padding: 1rem 1.5rem !important;
+  }
+
+  .config-actions {
+    position: relative !important;
+    backdrop-filter: none !important;
+    background: rgba(11, 15, 25, 0.9) !important;
+  }
+
+  /* Workspace Panel */
   .workspace-panel {
-    min-height: 60vh;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
+  .canvas-viewport {
+    height: 400px !important;
+    min-height: 400px !important;
+    overflow: visible !important;
+  }
+
+  .canvas-character-container {
+    width: 280px !important;
+    height: 280px !important;
+  }
+
+  /* Pipeline flow status tracker */
+  .pipeline-container {
+    position: relative !important;
+    width: 100% !important;
+    padding: 1rem 1.5rem !important;
+  }
+
+  /* History Sidebar */
+  .history-sidebar {
+    display: flex !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .history-list.scrollable {
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
   }
 }
 
